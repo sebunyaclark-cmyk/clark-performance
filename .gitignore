@@ -1,0 +1,5 @@
+.env
+node_modules/
+public/img/uploads/
+data/uploads/pdfs/*
+!data/uploads/pdfs/.gitkeep

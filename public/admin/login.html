@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – Log In</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="login-shell">
+    <div class="login-box">
+      <img src="/img/logo.png" alt="Clark Performance" style="height:44px;margin-bottom:24px;" />
+      <h2 style="margin-bottom:6px;">Admin Log In</h2>
+      <p class="form-note" style="margin-bottom:20px;">Site owner only.</p>
+      <div id="loginMsg"></div>
+      <form id="loginForm">
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Log In</button>
+      </form>
+    </div>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('loginMsg');
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        if (!res.ok) throw new Error('Wrong password');
+        window.location.href = '/admin/dashboard.html';
+      } catch (err) {
+        msg.innerHTML = `<div class="form-error">${err.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

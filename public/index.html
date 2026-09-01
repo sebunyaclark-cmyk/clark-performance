@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clark Performance – Sport-Specific Physical Training</title>
+  <meta name="description" content="Ready-made training programs for football, basketball, tennis, handball, ice hockey, track & field and combat sports – in-season and off-season. Buy and download instantly." />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="home">
+  <div id="site-header"></div>
+
+  <section class="hero">
+    <div class="container hero-inner">
+      <span class="eyebrow" id="heroEyebrow">The Work Starts Today</span>
+      <h1 id="heroHeadline">Train Like Top Athletes</h1>
+      <p class="lede" id="heroSubtext">Get stronger, more explosive and more robust. Better acceleration, higher top speed, and the ability to get past opponents with more power.</p>
+      <div class="hero-cta">
+        <a href="/programs.html" class="btn btn-primary">View All Programs</a>
+        <a href="/about.html" class="btn btn-outline-light">About Me</a>
+      </div>
+      <div class="hero-tags" id="sportTags"></div>
+    </div>
+
+    <div class="hero-media" aria-hidden="true">
+      <video id="heroVideo" autoplay muted loop playsinline preload="auto">
+        <source src="/video/hero-bg.webm" type="video/webm" />
+        <source src="/video/hero-bg.mp4" type="video/mp4" />
+      </video>
+    </div>
+  </section>
+
+  <section class="section section-dark" style="border-top:1px solid var(--gray-line);">
+    <div class="container split">
+      <img src="/img/gallery/trener-profil.jpg" alt="The coach behind Clark Performance" style="border-radius:4px; object-position: 50% 18%;" />
+      <div>
+        <span class="eyebrow">About Me</span>
+        <h2>The Coach Behind the Programs</h2>
+        <p class="lede">Shaped by elite environments — Leeds Beckett University, Leeds United Academy, i2i International Soccer Academy and NCAA Division I at Cal State Northridge — working with athletes at the highest level.</p>
+        <div id="aboutPreviewSocial" style="margin-top:16px;"></div>
+        <div style="margin-top:24px;">
+          <a href="/about.html" class="btn btn-outline-light">Read More About Me</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <span class="eyebrow">Programs</span>
+      <h2>For Every Sport, Every Level</h2>
+      <p class="lede" style="margin-bottom:36px;">From season-specific programs for your sport, to general development of power, speed and strength.</p>
+      <div class="grid grid-3" id="featuredPrograms">
+        <div class="skeleton" style="height:340px;"></div>
+        <div class="skeleton" style="height:340px;"></div>
+        <div class="skeleton" style="height:340px;"></div>
+      </div>
+      <div class="text-center" style="margin-top:36px;">
+        <a href="/programs.html" class="btn btn-outline-dark">View All Programs</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-dark">
+    <div class="container split">
+      <div>
+        <span class="eyebrow">How It Works</span>
+        <h2>Buy, Download, Get Started</h2>
+        <ul class="highlight-list">
+          <li>Pick the program that fits your sport, season and level.</li>
+          <li>Pay securely, right on the site.</li>
+          <li>Receive the full program as a PDF immediately after purchase — no app, no subscription.</li>
+        </ul>
+        <div style="margin-top:28px;">
+          <a href="/programs.html" class="btn btn-primary">View Programs</a>
+        </div>
+      </div>
+      <img src="/img/placeholder-program.svg" alt="Training" />
+    </div>
+  </section>
+
+  <section class="section section-dark">
+    <div class="container">
+      <span class="eyebrow">No Shortcuts</span>
+      <h2>Train Like a World-Class Athlete</h2>
+      <p class="lede" style="margin-bottom:36px;">Same standards. Same intensity. No shortcuts.</p>
+      <div class="grid grid-3 no-shortcuts-grid">
+        <div class="card-media" style="border-radius:4px;"><img src="/img/gallery/chelsea-gym.jpg" alt="Elite training facility" /></div>
+        <div class="card-media" style="border-radius:4px;"><img src="/img/gallery/chelsea-corridor.jpg" alt="Elite training facility" /></div>
+        <div class="card-media" style="border-radius:4px;"><img src="/img/gallery/michigan-training.jpg" alt="Elite training facility" /></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container text-center">
+      <span class="eyebrow">Testimonials</span>
+      <h2>Athletes I've Trained</h2>
+      <p class="lede" style="margin:0 auto 36px;">A small selection of athletes I've worked with over the years.</p>
+      <div class="grid grid-3" id="athletePreview"></div>
+      <div style="margin-top:36px;">
+        <a href="/athletes.html" class="btn btn-outline-dark">See More</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    const SPORTS = ['Football', 'Basketball', 'Tennis', 'Handball', 'Ice Hockey', 'Track & Field', 'Combat Sports', 'Volleyball'];
+    const GENERAL_TAGS = [
+      { label: 'Vertical Jump', id: 'vertikal-hopp' },
+      { label: 'Speed', id: 'speed-program' },
+      { label: 'Strength', id: 'styrke-program' },
+    ];
+    document.getElementById('sportTags').innerHTML =
+      SPORTS.map(s => `<a class="tag" href="/programs.html?sport=${encodeURIComponent(s)}">${s}</a>`).join('') +
+      GENERAL_TAGS.map(g => `<a class="tag" href="/program.html?id=${g.id}">${g.label}</a>`).join('');
+
+    // Static "No Shortcuts" gallery — not fetched from an API, so it's not covered by the
+    // programs/athletes initGridReveal() calls below. Wire it up directly here.
+    initGridReveal(document.querySelector('.no-shortcuts-grid'));
+
+    fetch('/api/programs').then(r => r.json()).then(programs => {
+      const featured = programs.filter(p => p.published).slice(0, 3);
+      const grid = document.getElementById('featuredPrograms');
+      grid.innerHTML = featured.map(programCardHTML).join('') || '<p>No programs published yet.</p>';
+      initGridReveal(grid);
+    });
+
+    fetch('/api/athletes').then(r => r.json()).then(athletes => {
+      const preview = athletes.slice(0, 3);
+      const grid = document.getElementById('athletePreview');
+      grid.innerHTML = preview.map(athleteCardHTML).join('');
+      initGridReveal(grid);
+    });
+
+    fetch('/api/settings').then(r => r.json()).then(s => {
+      if (s.heroEyebrow) document.getElementById('heroEyebrow').textContent = s.heroEyebrow;
+      if (s.heroHeadline) document.getElementById('heroHeadline').textContent = s.heroHeadline;
+      if (s.heroSubtext) document.getElementById('heroSubtext').textContent = s.heroSubtext;
+      document.getElementById('aboutPreviewSocial').innerHTML = socialIconsHTML(s);
+      if (s.heroVideoPath) {
+        const video = document.getElementById('heroVideo');
+        video.innerHTML = `<source src="${s.heroVideoPath}" />`;
+        video.load();
+        video.play().catch(() => {});
+      }
+    }).catch(() => {});
+  </script>
+</body>
+</html>

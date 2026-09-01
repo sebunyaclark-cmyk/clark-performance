@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <div class="admin-topbar">
+      <div class="container">
+        <strong>Clark Performance · Admin</strong>
+        <div>
+          <a href="/index.html" class="btn btn-outline-light" style="padding:8px 14px;font-size:0.8rem;margin-right:8px;">View Site</a>
+          <button class="btn btn-outline-light" style="padding:8px 14px;font-size:0.8rem;" id="logoutBtn">Log Out</button>
+        </div>
+      </div>
+    </div>
+    <div class="admin-layout">
+      <aside class="admin-sidebar" id="sidebar">
+        <button data-tab="programs" class="active">Programs</button>
+        <button data-tab="athletes">Athletes</button>
+        <button data-tab="about">About Me</button>
+        <button data-tab="contact">Inquiries</button>
+        <button data-tab="orders">Orders</button>
+        <button data-tab="settings">Settings</button>
+      </aside>
+      <main class="admin-main" id="main">
+        <p>Loading...</p>
+      </main>
+    </div>
+  </div>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

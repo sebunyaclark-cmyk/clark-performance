@@ -1,0 +1,29 @@
+[
+  {
+    "id": "eksempel-1",
+    "name": "First Last",
+    "sport": "Sport",
+    "quote": "This is a placeholder for a quote from an athlete you've trained. Edit or delete this in the admin panel.",
+    "imagePath": "/img/placeholder-athlete.svg",
+    "videoPath": "",
+    "videoUrl": ""
+  },
+  {
+    "id": "eksempel-2",
+    "name": "First Last",
+    "sport": "Sport",
+    "quote": "This is a placeholder for a quote from another athlete you've trained. Edit or delete this in the admin panel.",
+    "imagePath": "/img/placeholder-athlete.svg",
+    "videoPath": "",
+    "videoUrl": ""
+  },
+  {
+    "id": "eksempel-3",
+    "name": "First Last",
+    "sport": "Sport",
+    "quote": "This is a placeholder for a quote from a third athlete you've trained. Edit or delete this in the admin panel.",
+    "imagePath": "/img/placeholder-athlete.svg",
+    "videoPath": "",
+    "videoUrl": ""
+  }
+]

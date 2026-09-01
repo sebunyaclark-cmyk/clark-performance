@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contact – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="contact">
+  <div id="site-header"></div>
+
+  <section class="section-tight section-dark">
+    <div class="container">
+      <span class="eyebrow">Contact</span>
+      <h1 style="font-size:clamp(2.2rem,5vw,3.4rem);">Get In Touch</h1>
+      <p class="lede">Questions about a program, interested in a collaboration, or want a tailored plan? Send me a message.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container" style="max-width:640px;">
+      <div id="formMessages"></div>
+      <form id="contactForm">
+        <div class="form-field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div class="form-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-field">
+          <label for="phone">Phone (optional)</label>
+          <input type="tel" id="phone" name="phone" />
+        </div>
+        <div class="form-field">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    document.getElementById('contactForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const msgBox = document.getElementById('formMessages');
+      const form = e.target;
+      const payload = {
+        name: form.name.value,
+        email: form.email.value,
+        phone: form.phone.value,
+        message: form.message.value,
+      };
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Could not send the message');
+        msgBox.innerHTML = '<div class="form-success">Thanks! Your message has been sent. I\'ll get back to you as soon as I can.</div>';
+        form.reset();
+      } catch (err) {
+        msgBox.innerHTML = `<div class="form-error">${err.message}. Please try again, or email me directly.</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Message';
+      }
+    });
+  </script>
+</body>
+</html>

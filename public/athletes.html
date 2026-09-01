@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Athletes – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="athletes">
+  <div id="site-header"></div>
+
+  <section class="section-tight section-dark">
+    <div class="container">
+      <span class="eyebrow">Testimonials</span>
+      <h1 style="font-size:clamp(2.2rem,5vw,3.4rem);">Athletes I've Trained</h1>
+      <p class="lede">A selection of athletes I've had the pleasure of working with.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="grid grid-3" id="athleteGrid">
+        <div class="skeleton" style="height:420px;"></div>
+        <div class="skeleton" style="height:420px;"></div>
+        <div class="skeleton" style="height:420px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    fetch('/api/athletes').then(r => r.json()).then(athletes => {
+      const grid = document.getElementById('athleteGrid');
+      grid.innerHTML = athletes.map(athleteCardHTML).join('') || '<p>No athletes added yet.</p>';
+      initGridReveal(grid);
+    });
+  </script>
+</body>
+</html>

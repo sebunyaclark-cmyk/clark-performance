@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#0A0A0A"/>
+  <rect x="0" y="0" width="800" height="600" fill="url(#g)" opacity="0.9"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A0A0A"/>
+      <stop offset="1" stop-color="#132038"/>
+    </linearGradient>
+  </defs>
+  <g opacity="0.5" stroke="#93C5FD" stroke-width="2">
+    <line x1="0" y1="500" x2="800" y2="500"/>
+    <line x1="0" y1="440" x2="800" y2="440"/>
+  </g>
+  <text x="50%" y="52%" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#93C5FD" letter-spacing="4">CLARK PERFORMANCE</text>
+  <text x="50%" y="60%" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF" opacity="0.6">Replace with your own image in the admin panel</text>
+</svg>

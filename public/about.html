@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="about">
+  <div id="site-header"></div>
+
+  <section class="section" id="aboutSection">
+    <div class="container">
+      <div class="skeleton" style="height:400px;"></div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container">
+      <span class="eyebrow">Background</span>
+      <h2>Education &amp; Experience</h2>
+      <div class="about-timeline" id="aboutTimeline"></div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    fetch('/api/about').then(r => r.json()).then(about => {
+      document.getElementById('aboutSection').innerHTML = `
+        <div class="container split">
+          <img src="${about.imagePath}" alt="${about.heading}" style="object-position: 50% 18%;" />
+          <div>
+            <span class="eyebrow">About Me</span>
+            <h1>${about.heading}</h1>
+            <div id="aboutSocial" style="margin-bottom:16px;"></div>
+            <p class="lede">${about.intro}</p>
+            <p>${about.body || ''}</p>
+          </div>
+        </div>
+      `;
+
+      const sections = about.sections || [];
+      const timeline = document.getElementById('aboutTimeline');
+      timeline.innerHTML = sections.map(s => {
+        let media = '';
+        if (s.videoPath) {
+          media = `<video src="${s.videoPath}" controls preload="metadata"></video>`;
+        } else if (s.videoUrl) {
+          media = `<div class="video-embed-wrap"><iframe src="${toEmbedUrl(s.videoUrl)}" allowfullscreen loading="lazy"></iframe></div>`;
+        } else if (s.imagePath) {
+          media = `<img src="${s.imagePath}" alt="${s.title}" />`;
+        }
+        return `
+          <div class="about-item">
+            <div class="about-item-media${media ? '' : ' empty'}">${media || 'No image/video yet'}</div>
+            <div>
+              <h3>${s.title}</h3>
+              ${s.text ? `<p>${s.text}</p>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+      initGridReveal(timeline);
+    });
+
+    fetch('/api/settings').then(r => r.json()).then(s => {
+      document.getElementById('aboutSocial').innerHTML = socialIconsHTML(s);
+    }).catch(() => {});
+  </script>
+</body>
+</html>

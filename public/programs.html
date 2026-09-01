@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Programs – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="programs">
+  <div id="site-header"></div>
+
+  <section class="section-tight section-dark">
+    <div class="container">
+      <span class="eyebrow">All Programs</span>
+      <h1 style="font-size:clamp(2.2rem,5vw,3.4rem);">Find Your Program</h1>
+      <p class="lede">Filter by sport, season or type to find the right program for you.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div id="sportNote"></div>
+      <div class="filter-bar" id="filterBar"></div>
+      <div class="grid grid-3" id="programGrid">
+        <div class="skeleton" style="height:340px;"></div>
+        <div class="skeleton" style="height:340px;"></div>
+        <div class="skeleton" style="height:340px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    let ALL = [];
+    let activeFilter = 'all';
+    let sportParam = new URLSearchParams(location.search).get('sport') || '';
+
+    const FILTERS = [
+      { key: 'all', label: 'All' },
+      { key: 'sport', label: 'Sport-Specific' },
+      { key: 'general', label: 'General' },
+      { key: 'beginner', label: 'Beginner' },
+      { key: 'in-season', label: 'In-Season' },
+      { key: 'off-season', label: 'Off-Season' },
+    ];
+
+    function renderSportNote() {
+      const note = document.getElementById('sportNote');
+      if (!sportParam) { note.innerHTML = ''; return; }
+      note.innerHTML = `
+        <p class="form-note" style="margin:-16px 0 20px;font-size:0.95rem;">
+          Showing programs for <strong>${sportParam}</strong> —
+          <a href="/programs.html" style="color:var(--blue);text-decoration:underline;">clear filter</a>
+        </p>
+      `;
+    }
+
+    function renderFilters() {
+      document.getElementById('filterBar').innerHTML = FILTERS.map(f =>
+        `<button class="filter-btn ${!sportParam && activeFilter === f.key ? 'active' : ''}" data-key="${f.key}">${f.label}</button>`
+      ).join('');
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          sportParam = '';
+          activeFilter = btn.dataset.key;
+          renderSportNote();
+          renderFilters();
+          renderGrid();
+        });
+      });
+    }
+
+    function renderGrid() {
+      let list = ALL.filter(p => p.published);
+      if (sportParam) {
+        list = list.filter(p => (p.sport || '').toLowerCase() === sportParam.toLowerCase());
+      } else if (activeFilter === 'sport' || activeFilter === 'general' || activeFilter === 'beginner') {
+        list = list.filter(p => p.category === activeFilter);
+      } else if (activeFilter === 'in-season' || activeFilter === 'off-season') {
+        list = list.filter(p => p.season === activeFilter);
+      }
+      const grid = document.getElementById('programGrid');
+      grid.innerHTML = list.map(programCardHTML).join('') || '<p>No programs in this category yet.</p>';
+      initGridReveal(grid);
+    }
+
+    fetch('/api/programs').then(r => r.json()).then(programs => {
+      ALL = programs;
+      renderSportNote();
+      renderFilters();
+      renderGrid();
+    });
+  </script>
+</body>
+</html>

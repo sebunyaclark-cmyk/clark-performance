@@ -1,0 +1,56 @@
+{
+  "heading": "About Clark Performance",
+  "intro": "Write a short intro sentence about yourself here via the admin panel.",
+  "body": "This is placeholder text. Go to /admin and edit this section with your own background, experience, and what makes your training philosophy unique. Feel free to share which sports and levels you've worked with, and what clients can expect from you as a coach.",
+  "imagePath": "/img/gallery/trener-profil.jpg",
+  "sections": [
+    {
+      "id": "edu-ntnu",
+      "title": "Bachelor i idrettsvitenskap, NTNU Trondheim",
+      "text": "",
+      "imagePath": "",
+      "videoPath": "",
+      "videoUrl": ""
+    },
+    {
+      "id": "edu-leeds-beckett",
+      "title": "Master i Strength & Conditioning, Leeds Beckett University",
+      "text": "",
+      "imagePath": "",
+      "videoPath": "",
+      "videoUrl": ""
+    },
+    {
+      "id": "leeds-united",
+      "title": "Leeds United Academy",
+      "text": "",
+      "imagePath": "",
+      "videoPath": "",
+      "videoUrl": ""
+    },
+    {
+      "id": "i2i-academy",
+      "title": "i2i International Soccer Academy, Storbritannia",
+      "text": "",
+      "imagePath": "",
+      "videoPath": "",
+      "videoUrl": ""
+    },
+    {
+      "id": "csun",
+      "title": "California State University, Northridge — NCAA Division I",
+      "text": "",
+      "imagePath": "",
+      "videoPath": "",
+      "videoUrl": ""
+    },
+    {
+      "id": "lovenstad",
+      "title": "Løvenstad Fotballklubb",
+      "text": "Currently coaching here.",
+      "imagePath": "",
+      "videoPath": "",
+      "videoUrl": ""
+    }
+  ]
+}

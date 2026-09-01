@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Program – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="programs">
+  <div id="site-header"></div>
+
+  <section class="section" id="programDetail">
+    <div class="container">
+      <div class="skeleton" style="height:60px;width:50%;margin-bottom:20px;"></div>
+      <div class="skeleton" style="height:400px;"></div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+
+    async function load() {
+      const res = await fetch('/api/programs');
+      const programs = await res.json();
+      const program = programs.find(p => p.id === id);
+      const mount = document.getElementById('programDetail');
+      if (!program) {
+        mount.innerHTML = '<div class="container"><h1>Program not found</h1><a class="btn btn-outline-dark" href="/programs.html">Back to programs</a></div>';
+        return;
+      }
+      const badge = program.category === 'sport' ? `${program.sport} · ${seasonLabel(program.season)}`
+        : program.category === 'beginner' ? 'Beginner' : 'General';
+
+      mount.innerHTML = `
+        <div class="container split">
+          <div>
+            <div class="card-media" style="border-radius:4px;">
+              <img src="${program.imagePath}" alt="${program.title}" />
+            </div>
+          </div>
+          <div>
+            <span class="card-badge">${badge}</span>
+            <h1 style="margin-top:12px;">${program.title}</h1>
+            <p class="lede">${program.description}</p>
+            <div style="display:flex;align-items:center;gap:20px;margin:24px 0;">
+              <span class="price" style="font-size:2rem;">${formatPrice(program.priceNok)}</span>
+            </div>
+            <div id="buyArea">
+              <button class="btn btn-primary btn-block" id="buyBtn">Buy Program</button>
+            </div>
+            <p class="form-note" id="buyNote">You'll receive the full program as a PDF immediately after purchase.</p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('buyBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('buyBtn');
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+        try {
+          const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ programId: program.id }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Something went wrong');
+          window.location.href = data.url;
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = 'Buy Program';
+          document.getElementById('buyNote').innerHTML = `<span style="color:#B42318;">${e.message}. Payment isn't set up yet — contact the site owner.</span>`;
+        }
+      });
+    }
+    load();
+  </script>
+</body>
+</html>

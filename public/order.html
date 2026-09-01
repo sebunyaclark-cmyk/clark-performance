@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Order – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="order">
+  <div id="site-header"></div>
+
+  <section class="section" style="min-height:50vh;">
+    <div class="container" style="max-width:640px;" id="orderBox">
+      <div class="skeleton" style="height:200px;"></div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const sessionId = params.get('session_id');
+    const box = document.getElementById('orderBox');
+
+    async function poll(attempt) {
+      if (!sessionId) {
+        box.innerHTML = '<h1>No order found</h1><p>Missing session id in the link.</p>';
+        return;
+      }
+      const res = await fetch('/api/order?session_id=' + encodeURIComponent(sessionId));
+      if (res.status === 202 && attempt < 8) {
+        box.innerHTML = '<h1>Processing payment...</h1><p class="lede">This usually takes just a few seconds. Please don\'t close this page.</p>';
+        setTimeout(() => poll(attempt + 1), 2000);
+        return;
+      }
+      if (!res.ok) {
+        box.innerHTML = '<h1>Order not found</h1><p class="lede">Get in touch if you just paid and don\'t see your order.</p><a class="btn btn-outline-dark" href="/contact.html">Contact Me</a>';
+        return;
+      }
+      const order = await res.json();
+      box.innerHTML = `
+        <span class="eyebrow">Thanks for your purchase!</span>
+        <h1>${order.programTitle}</h1>
+        <p class="lede">Your order is confirmed. Download the full program PDF below.</p>
+        <a class="btn btn-primary" href="/api/download/${order.downloadToken}">Download PDF</a>
+        <p class="form-note">A receipt has been sent to ${order.customerEmail || 'your email'}.</p>
+      `;
+    }
+    poll(0);
+  </script>
+</body>
+</html>
