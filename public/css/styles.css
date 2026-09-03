@@ -161,6 +161,19 @@ img { max-width: 100%; display: block; }
 .nav-toggle { display: none; background: none; border: none; color: var(--white); font-size: 1.6rem; cursor: pointer; transition: transform .15s ease; }
 .nav-toggle:active { transform: scale(0.9); }
 
+.cart-link { position: relative; display: inline-flex; align-items: center; color: var(--white); transition: color .15s ease, transform .15s ease; }
+.cart-link:hover, .cart-link.active { color: var(--blue-light); transform: translateY(-1px); }
+.cart-badge {
+  display: none;
+  align-items: center; justify-content: center;
+  position: absolute; top: -8px; right: -10px;
+  min-width: 17px; height: 17px; padding: 0 4px;
+  background: var(--blue); color: var(--white);
+  border-radius: 999px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.7rem; font-weight: 700;
+}
+
 @media (max-width: 860px) {
   .nav { position: fixed; inset: 76px 0 0 0; background: var(--black); flex-direction: column; padding: 24px; gap: 20px; transform: translateY(-110%); transition: transform .25s ease; }
   .nav.open { transform: translateY(0); }

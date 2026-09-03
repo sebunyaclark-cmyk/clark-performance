@@ -397,7 +397,7 @@ async function renderOrders() {
         ${items.slice().reverse().map(i => `
           <tr>
             <td>${new Date(i.createdAt).toLocaleString('en-US')}</td>
-            <td>${i.programTitle}</td>
+            <td>${(i.items || []).map(it => it.programTitle).join(', ') || i.programTitle || ''}</td>
             <td>${i.customerEmail || ''}</td>
             <td>${i.amountNok || ''} NOK</td>
           </tr>

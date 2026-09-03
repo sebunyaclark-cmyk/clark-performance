@@ -39,13 +39,22 @@
         return;
       }
       const order = await res.json();
+      const items = order.items || [];
       box.innerHTML = `
         <span class="eyebrow">Thanks for your purchase!</span>
-        <h1>${order.programTitle}</h1>
-        <p class="lede">Your order is confirmed. Download the full program PDF below.</p>
-        <a class="btn btn-primary" href="/api/download/${order.downloadToken}">Download PDF</a>
+        <h1>${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
+        <p class="lede">Your order is confirmed. Download your program PDF${items.length > 1 ? 's' : ''} below.</p>
+        <div class="stack" style="margin:24px 0;">
+          ${items.map(it => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid #E7E8EA;border-radius:4px;">
+              <span style="font-weight:600;">${it.programTitle}</span>
+              <a class="btn btn-primary" style="padding:10px 20px;" href="/api/download/${it.downloadToken}">Download PDF</a>
+            </div>
+          `).join('')}
+        </div>
         <p class="form-note">A receipt has been sent to ${order.customerEmail || 'your email'}.</p>
       `;
+      clearCart();
     }
     poll(0);
   </script>

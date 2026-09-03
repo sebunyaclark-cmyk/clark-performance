@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Cart – Clark Performance</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-page="cart">
+  <div id="site-header"></div>
+
+  <section class="section" style="min-height:50vh;">
+    <div class="container" style="max-width:760px;">
+      <span class="eyebrow">Your Cart</span>
+      <h1 style="margin-bottom:28px;">Cart</h1>
+      <div id="cartBox"></div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+
+  <script src="/js/site.js"></script>
+  <script>
+    function renderCart() {
+      const cart = getCart();
+      const box = document.getElementById('cartBox');
+
+      if (!cart.length) {
+        box.innerHTML = `
+          <p class="lede" style="margin-bottom:24px;">Your cart is empty.</p>
+          <a class="btn btn-primary" href="/programs.html">Browse Programs</a>
+        `;
+        return;
+      }
+
+      box.innerHTML = `
+        <div class="stack" style="margin-bottom:28px;">
+          ${cart.map(item => `
+            <div style="display:flex;align-items:center;gap:16px;padding:14px;border:1px solid #E7E8EA;border-radius:4px;">
+              <img src="${item.imagePath}" alt="" style="width:70px;height:70px;object-fit:cover;border-radius:4px;flex-shrink:0;" />
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;">${item.title}</div>
+                <div class="price">${formatPrice(item.priceNok)}</div>
+              </div>
+              <button class="btn btn-outline-dark" style="padding:8px 16px;font-size:0.8rem;" data-remove="${item.id}">Remove</button>
+            </div>
+          `).join('')}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #E7E8EA;padding-top:20px;margin-bottom:24px;">
+          <span style="font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-weight:700;font-size:1.1rem;">Total</span>
+          <span class="price" style="font-size:1.6rem;">${formatPrice(cartTotal(cart))}</span>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" style="flex:1;min-width:200px;" id="checkoutBtn">Checkout</button>
+          <a class="btn btn-outline-dark" href="/programs.html">Add More Programs</a>
+        </div>
+        <p class="form-note" id="checkoutNote"></p>
+      `;
+
+      box.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          removeFromCart(btn.dataset.remove);
+          renderCart();
+        });
+      });
+
+      document.getElementById('checkoutBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('checkoutBtn');
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+        try {
+          const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ programIds: getCart().map(item => item.id) }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Something went wrong');
+          window.location.href = data.url;
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = 'Checkout';
+          document.getElementById('checkoutNote').innerHTML = `<span style="color:#B42318;">${e.message}.</span>`;
+        }
+      });
+    }
+    renderCart();
+  </script>
+</body>
+</html>

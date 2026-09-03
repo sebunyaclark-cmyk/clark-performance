@@ -9,6 +9,41 @@ const NAV_LINKS = [
   { href: '/contact.html', label: 'Contact', key: 'contact' },
 ];
 
+/* ---------- Shopping cart (stored client-side, per browser, until checkout) ---------- */
+const CART_KEY = 'cp_cart';
+
+function getCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveCart(cart) {
+  try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* storage unavailable */ }
+  updateCartBadge();
+}
+function addToCart(program) {
+  const cart = getCart();
+  if (cart.some(item => item.id === program.id)) return cart; // one of each program
+  cart.push({ id: program.id, title: program.title, priceNok: program.priceNok, imagePath: program.imagePath });
+  saveCart(cart);
+  return cart;
+}
+function removeFromCart(id) {
+  const cart = getCart().filter(item => item.id !== id);
+  saveCart(cart);
+  return cart;
+}
+function clearCart() { saveCart([]); }
+function cartTotal(cart) { return cart.reduce((sum, item) => sum + (item.priceNok || 0), 0); }
+function updateCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  if (!badge) return;
+  const count = getCart().length;
+  badge.textContent = String(count);
+  badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
 function renderHeader() {
   const mount = document.getElementById('site-header');
   if (!mount) return;
@@ -22,6 +57,10 @@ function renderHeader() {
         <button class="nav-toggle" id="navToggle" aria-label="Meny">&#9776;</button>
         <nav class="nav" id="mainNav">
           ${NAV_LINKS.map(l => `<a href="${l.href}" class="${l.key === active ? 'active' : ''}">${l.label}</a>`).join('')}
+          <a href="/cart.html" class="cart-link ${active === 'cart' ? 'active' : ''}" aria-label="Cart">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="21" r="1.3" fill="currentColor" stroke="none"/><path d="M2.5 3h2.4l2.2 12.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21 7H6"/></svg>
+            <span id="cartBadge" class="cart-badge"></span>
+          </a>
         </nav>
       </div>
     </header>
@@ -29,6 +68,7 @@ function renderHeader() {
   const toggle = document.getElementById('navToggle');
   const nav = document.getElementById('mainNav');
   toggle.addEventListener('click', () => nav.classList.toggle('open'));
+  updateCartBadge();
 }
 
 async function renderFooter() {

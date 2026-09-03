@@ -268,16 +268,18 @@ async function stripeRequest(endpoint, formParams, method = 'POST') {
   return data;
 }
 
-async function createCheckoutSession(program) {
+async function createCheckoutSession(programs, cancelUrl) {
   const params = new URLSearchParams();
   params.set('mode', 'payment');
   params.set('success_url', `${SITE_URL}/order.html?session_id={CHECKOUT_SESSION_ID}`);
-  params.set('cancel_url', `${SITE_URL}/program.html?id=${program.id}`);
-  params.set('line_items[0][quantity]', '1');
-  params.set('line_items[0][price_data][currency]', 'nok');
-  params.set('line_items[0][price_data][unit_amount]', String(Math.round(program.priceNok * 100)));
-  params.set('line_items[0][price_data][product_data][name]', program.title);
-  params.set('metadata[programId]', program.id);
+  params.set('cancel_url', cancelUrl);
+  programs.forEach((program, i) => {
+    params.set(`line_items[${i}][quantity]`, '1');
+    params.set(`line_items[${i}][price_data][currency]`, 'nok');
+    params.set(`line_items[${i}][price_data][unit_amount]`, String(Math.round(program.priceNok * 100)));
+    params.set(`line_items[${i}][price_data][product_data][name]`, program.title);
+  });
+  params.set('metadata[programIds]', programs.map(p => p.id).join(','));
   return stripeRequest('checkout/sessions', params);
 }
 
@@ -296,16 +298,22 @@ async function recordOrderFromSession(session) {
   const existing = orders.find(o => o.stripeSessionId === session.id);
   if (existing) return existing;
   const programs = await readJSON('programs.json', []);
-  const programId = session.metadata?.programId;
-  const program = programs.find(p => p.id === programId);
+  const programIds = (session.metadata?.programIds || session.metadata?.programId || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const items = programIds.map(id => {
+    const program = programs.find(p => p.id === id);
+    return {
+      programId: program?.id || id,
+      programTitle: program?.title || 'Unknown program',
+      downloadToken: crypto.randomUUID(),
+    };
+  });
   const order = {
     id: crypto.randomUUID(),
     stripeSessionId: session.id,
-    programId: program?.id || programId || '',
-    programTitle: program?.title || 'Unknown program',
+    items,
     customerEmail: session.customer_details?.email || session.customer_email || '',
-    amountNok: session.amount_total ? session.amount_total / 100 : (program?.priceNok || 0),
-    downloadToken: crypto.randomUUID(),
+    amountNok: session.amount_total ? session.amount_total / 100 : 0,
     createdAt: new Date().toISOString(),
   };
   orders.push(order);
@@ -361,15 +369,20 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { ok: true });
     }
 
-    /* ---- Checkout ---- */
+    /* ---- Checkout (accepts one or several program ids — the shopping cart) ---- */
     if (method === 'POST' && pathname === '/api/checkout') {
       if (!STRIPE_SECRET_KEY) return sendJSON(res, 400, { error: 'Payment is not set up yet' });
       const body = await readJSONBody(req);
-      const programs = await readJSON('programs.json', []);
-      const program = programs.find(p => p.id === body.programId && p.published);
-      if (!program) return sendJSON(res, 404, { error: 'Program not found' });
+      const ids = Array.isArray(body.programIds) ? body.programIds : (body.programId ? [body.programId] : []);
+      if (!ids.length) return sendJSON(res, 400, { error: 'No programs given' });
+      const allPrograms = await readJSON('programs.json', []);
+      const selected = ids
+        .map(id => allPrograms.find(p => p.id === id && p.published))
+        .filter(Boolean);
+      if (!selected.length) return sendJSON(res, 404, { error: 'Program not found' });
+      const cancelUrl = selected.length === 1 ? `${SITE_URL}/program.html?id=${selected[0].id}` : `${SITE_URL}/cart.html`;
       try {
-        const session = await createCheckoutSession(program);
+        const session = await createCheckoutSession(selected, cancelUrl);
         return sendJSON(res, 200, { url: session.url });
       } catch (e) {
         console.error(e);
@@ -402,17 +415,18 @@ const server = http.createServer(async (req, res) => {
         } catch (e) { /* fall through */ }
       }
       if (!order) return sendJSON(res, 202, { status: 'processing' });
-      return sendJSON(res, 200, { programTitle: order.programTitle, downloadToken: order.downloadToken, customerEmail: order.customerEmail });
+      return sendJSON(res, 200, { items: order.items || [], customerEmail: order.customerEmail });
     }
 
     /* ---- Secure PDF download (only via a valid order token) ---- */
     if (method === 'GET' && pathname.startsWith('/api/download/')) {
       const token = pathname.replace('/api/download/', '');
       const orders = await readJSON('orders.json', []);
-      const order = orders.find(o => o.downloadToken === token);
-      if (!order) return sendText(res, 404, 'Invalid or expired download link');
+      const order = orders.find(o => (o.items || []).some(it => it.downloadToken === token));
+      const item = order?.items.find(it => it.downloadToken === token);
+      if (!order || !item) return sendText(res, 404, 'Invalid or expired download link');
       const programs = await readJSON('programs.json', []);
-      const program = programs.find(p => p.id === order.programId);
+      const program = programs.find(p => p.id === item.programId);
       if (!program?.pdfPath) return sendText(res, 404, 'PDF not uploaded for this program yet. Please contact the seller.');
       const filePath = path.join(DATA_DIR, 'uploads', program.pdfPath);
       try {
