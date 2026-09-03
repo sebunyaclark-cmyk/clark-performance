@@ -29,14 +29,40 @@ if (!STRIPE_SECRET_KEY) {
 }
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const DATA_DIR = path.join(__dirname, 'data');
-const UPLOADS_IMG_DIR = path.join(PUBLIC_DIR, 'img', 'uploads');
-const UPLOADS_VIDEO_DIR = path.join(PUBLIC_DIR, 'video', 'uploads');
+
+// On a host with an attached persistent disk (e.g. Render), set PERSIST_DIR to its mount
+// path. All editable content (JSON "database" + uploaded images/videos/PDFs) then lives on
+// that disk instead of the app's own ephemeral filesystem, so it survives restarts/redeploys.
+// Left unset, everything behaves exactly as before (data/ and public/*/uploads in the repo).
+const PERSIST_ROOT = process.env.PERSIST_DIR ? path.resolve(process.env.PERSIST_DIR) : null;
+
+const DATA_DIR = PERSIST_ROOT ? path.join(PERSIST_ROOT, 'data') : path.join(__dirname, 'data');
+const UPLOADS_IMG_DIR = PERSIST_ROOT ? path.join(PERSIST_ROOT, 'uploads', 'img') : path.join(PUBLIC_DIR, 'img', 'uploads');
+const UPLOADS_VIDEO_DIR = PERSIST_ROOT ? path.join(PERSIST_ROOT, 'uploads', 'video') : path.join(PUBLIC_DIR, 'video', 'uploads');
 const UPLOADS_PDF_DIR = path.join(DATA_DIR, 'uploads', 'pdfs');
 
 await fs.mkdir(UPLOADS_IMG_DIR, { recursive: true });
 await fs.mkdir(UPLOADS_VIDEO_DIR, { recursive: true });
 await fs.mkdir(UPLOADS_PDF_DIR, { recursive: true });
+
+// First boot on a fresh/empty persistent disk: seed it from the repo's default content so the
+// site doesn't come up blank (18+ programs, settings, etc. all still need to exist somewhere).
+if (PERSIST_ROOT) {
+  const repoDataDir = path.join(__dirname, 'data');
+  const seededMarker = path.join(DATA_DIR, 'programs.json');
+  if (!fssync.existsSync(seededMarker) && fssync.existsSync(repoDataDir)) {
+    await fs.cp(repoDataDir, DATA_DIR, { recursive: true });
+    console.log('Seeded persistent data directory from repo defaults.');
+  }
+  const repoImgUploads = path.join(PUBLIC_DIR, 'img', 'uploads');
+  if (fssync.existsSync(repoImgUploads) && (await fs.readdir(UPLOADS_IMG_DIR)).length === 0) {
+    await fs.cp(repoImgUploads, UPLOADS_IMG_DIR, { recursive: true });
+  }
+  const repoVideoUploads = path.join(PUBLIC_DIR, 'video', 'uploads');
+  if (fssync.existsSync(repoVideoUploads) && (await fs.readdir(UPLOADS_VIDEO_DIR)).length === 0) {
+    await fs.cp(repoVideoUploads, UPLOADS_VIDEO_DIR, { recursive: true });
+  }
+}
 
 /* ---------------- .env loader (no dependency needed) ---------------- */
 function loadDotEnv(file) {
@@ -143,10 +169,10 @@ const MIME = {
 // Video/audio elements rely on HTTP Range requests (Chrome sends "Range: bytes=0-" before it
 // will even start playback) — without 206 Partial Content support here, <video> tags across the
 // site (this hero background, athlete videos in the gallery) fail to load or silently never play.
-async function serveStatic(req, res, pathname) {
+async function serveStatic(req, res, pathname, baseDir = PUBLIC_DIR) {
   let rel = pathname === '/' ? '/index.html' : pathname;
-  const resolved = path.normalize(path.join(PUBLIC_DIR, rel));
-  if (!resolved.startsWith(PUBLIC_DIR)) return sendText(res, 403, 'Forbidden');
+  const resolved = path.normalize(path.join(baseDir, rel));
+  if (!resolved.startsWith(baseDir)) return sendText(res, 403, 'Forbidden');
   try {
     const stat = await fs.stat(resolved);
     if (stat.isDirectory()) return sendText(res, 404, 'Not found');
@@ -521,6 +547,14 @@ const server = http.createServer(async (req, res) => {
     /* ---- Admin: upload ---- */
     if (pathname === '/api/admin/upload' && method === 'POST') {
       return handleUpload(req, res);
+    }
+
+    /* ---- Uploaded images/videos, when they live on a persistent disk instead of public/ ---- */
+    if (method === 'GET' && PERSIST_ROOT && pathname.startsWith('/img/uploads/')) {
+      return serveStatic(req, res, pathname.replace('/img/uploads', ''), UPLOADS_IMG_DIR);
+    }
+    if (method === 'GET' && PERSIST_ROOT && pathname.startsWith('/video/uploads/')) {
+      return serveStatic(req, res, pathname.replace('/video/uploads', ''), UPLOADS_VIDEO_DIR);
     }
 
     /* ---- Fallback: static files ---- */
