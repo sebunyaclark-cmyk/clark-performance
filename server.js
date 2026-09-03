@@ -462,6 +462,14 @@ const server = http.createServer(async (req, res) => {
       await writeJSON('programs.json', programs);
       return sendJSON(res, 200, programs[idx]);
     }
+    if (pathname.startsWith('/api/admin/programs/') && method === 'DELETE') {
+      if (!requireAdmin(req, res)) return;
+      const id = pathname.split('/').pop();
+      let programs = await readJSON('programs.json', []);
+      programs = programs.filter(p => p.id !== id);
+      await writeJSON('programs.json', programs);
+      return sendJSON(res, 200, { ok: true });
+    }
 
     /* ---- Admin: athletes ---- */
     if (pathname === '/api/admin/athletes' && method === 'GET') {

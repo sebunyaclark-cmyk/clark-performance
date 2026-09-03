@@ -81,6 +81,7 @@ function programEditCardHTML(p) {
           </label>
           <div class="admin-row-actions">
             <button class="btn btn-primary" style="padding:10px 18px;" id="save-${p.id}">Save</button>
+            <button class="btn btn-outline-dark" style="padding:10px 18px;" id="del-${p.id}">Delete</button>
             <span id="status-${p.id}" class="form-note"></span>
           </div>
         </div>
@@ -116,6 +117,11 @@ function wireProgramCard(p) {
     } catch (e) {
       statusEl.textContent = e.message;
     }
+  });
+  document.getElementById(`del-${p.id}`).addEventListener('click', async () => {
+    if (!confirm(`Delete "${p.title}"? This can't be undone.`)) return;
+    await api(`/api/admin/programs/${p.id}`, { method: 'DELETE' });
+    renderPrograms();
   });
 }
 

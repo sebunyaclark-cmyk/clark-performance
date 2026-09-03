@@ -208,32 +208,6 @@
     "published": true
   },
   {
-    "id": "vertikal-hopp",
-    "title": "Vertical Jump / Explosiveness",
-    "sport": "General",
-    "category": "general",
-    "season": "",
-    "shortDescription": "Increase your vertical jump with a structured program for jump height and explosive power development.",
-    "description": "A dedicated program to increase vertical jump and general explosiveness. Combines plyometrics, strength and technique work in a progressive structure suited for any sport where jump power matters.",
-    "priceNok": 1190,
-    "imagePath": "/img/placeholder-program.svg",
-    "pdfPath": "",
-    "published": true
-  },
-  {
-    "id": "speed-program",
-    "title": "Speed Program",
-    "sport": "General",
-    "category": "general",
-    "season": "",
-    "shortDescription": "Get faster with a program built around acceleration, top speed and change of direction.",
-    "description": "A complete speed program focused on acceleration mechanics, top speed and change of direction (COD). Built on the same principles used with high-level athletes, adapted to your sport.",
-    "priceNok": 1190,
-    "imagePath": "/img/placeholder-program.svg",
-    "pdfPath": "",
-    "published": true
-  },
-  {
     "id": "styrke-program",
     "title": "Strength Program",
     "sport": "General",
