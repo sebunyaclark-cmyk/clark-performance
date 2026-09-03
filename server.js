@@ -30,6 +30,17 @@ if (!STRIPE_SECRET_KEY) {
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
+// Free, permanent persistence option: a Supabase project (Postgres table for the JSON
+// "database" + Storage buckets for uploaded images/videos/PDFs). When both are set, this
+// takes priority over everything else below — the app's own filesystem is never written to,
+// so restarts/redeploys/sleep-wake cycles on a free host never lose data. Left unset, the app
+// falls back to PERSIST_DIR (a real attached disk) or, failing that, plain local files.
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_SERVICE_KEY);
+const SUPABASE_PUBLIC_BUCKET = 'public-uploads';
+const SUPABASE_PRIVATE_BUCKET = 'private-uploads';
+
 // On a host with an attached persistent disk (e.g. Render), set PERSIST_DIR to its mount
 // path. All editable content (JSON "database" + uploaded images/videos/PDFs) then lives on
 // that disk instead of the app's own ephemeral filesystem, so it survives restarts/redeploys.
@@ -41,27 +52,98 @@ const UPLOADS_IMG_DIR = PERSIST_ROOT ? path.join(PERSIST_ROOT, 'uploads', 'img')
 const UPLOADS_VIDEO_DIR = PERSIST_ROOT ? path.join(PERSIST_ROOT, 'uploads', 'video') : path.join(PUBLIC_DIR, 'video', 'uploads');
 const UPLOADS_PDF_DIR = path.join(DATA_DIR, 'uploads', 'pdfs');
 
-await fs.mkdir(UPLOADS_IMG_DIR, { recursive: true });
-await fs.mkdir(UPLOADS_VIDEO_DIR, { recursive: true });
-await fs.mkdir(UPLOADS_PDF_DIR, { recursive: true });
+if (!USE_SUPABASE) {
+  await fs.mkdir(UPLOADS_IMG_DIR, { recursive: true });
+  await fs.mkdir(UPLOADS_VIDEO_DIR, { recursive: true });
+  await fs.mkdir(UPLOADS_PDF_DIR, { recursive: true });
 
-// First boot on a fresh/empty persistent disk: seed it from the repo's default content so the
-// site doesn't come up blank (18+ programs, settings, etc. all still need to exist somewhere).
-if (PERSIST_ROOT) {
-  const repoDataDir = path.join(__dirname, 'data');
-  const seededMarker = path.join(DATA_DIR, 'programs.json');
-  if (!fssync.existsSync(seededMarker) && fssync.existsSync(repoDataDir)) {
-    await fs.cp(repoDataDir, DATA_DIR, { recursive: true });
-    console.log('Seeded persistent data directory from repo defaults.');
+  // First boot on a fresh/empty persistent disk: seed it from the repo's default content so the
+  // site doesn't come up blank (18+ programs, settings, etc. all still need to exist somewhere).
+  if (PERSIST_ROOT) {
+    const repoDataDir = path.join(__dirname, 'data');
+    const seededMarker = path.join(DATA_DIR, 'programs.json');
+    if (!fssync.existsSync(seededMarker) && fssync.existsSync(repoDataDir)) {
+      await fs.cp(repoDataDir, DATA_DIR, { recursive: true });
+      console.log('Seeded persistent data directory from repo defaults.');
+    }
+    const repoImgUploads = path.join(PUBLIC_DIR, 'img', 'uploads');
+    if (fssync.existsSync(repoImgUploads) && (await fs.readdir(UPLOADS_IMG_DIR)).length === 0) {
+      await fs.cp(repoImgUploads, UPLOADS_IMG_DIR, { recursive: true });
+    }
+    const repoVideoUploads = path.join(PUBLIC_DIR, 'video', 'uploads');
+    if (fssync.existsSync(repoVideoUploads) && (await fs.readdir(UPLOADS_VIDEO_DIR)).length === 0) {
+      await fs.cp(repoVideoUploads, UPLOADS_VIDEO_DIR, { recursive: true });
+    }
   }
-  const repoImgUploads = path.join(PUBLIC_DIR, 'img', 'uploads');
-  if (fssync.existsSync(repoImgUploads) && (await fs.readdir(UPLOADS_IMG_DIR)).length === 0) {
-    await fs.cp(repoImgUploads, UPLOADS_IMG_DIR, { recursive: true });
+}
+
+/* ---------------- Supabase (free permanent storage) ---------------- */
+async function supabaseRequest(pathAndQuery, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}${pathAndQuery}`, {
+    ...opts,
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      ...opts.headers,
+    },
+  });
+  return res;
+}
+async function supabaseGetValue(key) {
+  const res = await supabaseRequest(`/rest/v1/site_data?key=eq.${encodeURIComponent(key)}&select=value`);
+  if (!res.ok) throw new Error(`Supabase read failed (${res.status})`);
+  const rows = await res.json();
+  return rows[0]?.value;
+}
+async function supabaseSetValue(key, value) {
+  const res = await supabaseRequest('/rest/v1/site_data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
+    body: JSON.stringify({ key, value, updated_at: new Date().toISOString() }),
+  });
+  if (!res.ok) throw new Error(`Supabase write failed (${res.status}): ${await res.text()}`);
+}
+async function supabaseEnsureBucket(name, isPublic) {
+  const check = await supabaseRequest(`/storage/v1/bucket/${name}`);
+  if (check.ok) return;
+  await supabaseRequest('/storage/v1/bucket', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: name, name, public: isPublic }),
+  });
+}
+async function supabaseUpload(bucket, objectPath, buffer, contentType) {
+  const res = await supabaseRequest(`/storage/v1/object/${bucket}/${objectPath}`, {
+    method: 'POST',
+    headers: { 'Content-Type': contentType, 'x-upsert': 'true' },
+    body: buffer,
+  });
+  if (!res.ok) throw new Error(`Supabase upload failed (${res.status}): ${await res.text()}`);
+}
+async function supabaseDownload(bucket, objectPath) {
+  const res = await supabaseRequest(`/storage/v1/object/${bucket}/${objectPath}`);
+  if (!res.ok) return null;
+  return Buffer.from(await res.arrayBuffer());
+}
+
+if (USE_SUPABASE) {
+  await supabaseEnsureBucket(SUPABASE_PUBLIC_BUCKET, true);
+  await supabaseEnsureBucket(SUPABASE_PRIVATE_BUCKET, false);
+  // One-time seed: if the programs table is empty (fresh Supabase project), populate it from
+  // the repo's default JSON files so the site isn't blank on first connect.
+  const existing = await supabaseGetValue('programs').catch(() => undefined);
+  if (existing === undefined) {
+    const repoDataDir = path.join(__dirname, 'data');
+    const defaultFiles = ['programs.json', 'athletes.json', 'about.json', 'settings.json', 'orders.json', 'contact-submissions.json'];
+    for (const file of defaultFiles) {
+      const p = path.join(repoDataDir, file);
+      if (!fssync.existsSync(p)) continue;
+      const value = JSON.parse(fssync.readFileSync(p, 'utf8'));
+      await supabaseSetValue(file.replace('.json', ''), value);
+    }
+    console.log('Seeded Supabase site_data table from repo defaults.');
   }
-  const repoVideoUploads = path.join(PUBLIC_DIR, 'video', 'uploads');
-  if (fssync.existsSync(repoVideoUploads) && (await fs.readdir(UPLOADS_VIDEO_DIR)).length === 0) {
-    await fs.cp(repoVideoUploads, UPLOADS_VIDEO_DIR, { recursive: true });
-  }
+  console.log('✅ Using Supabase for permanent storage (data + uploads).');
 }
 
 /* ---------------- .env loader (no dependency needed) ---------------- */
@@ -84,6 +166,15 @@ function loadDotEnv(file) {
 
 /* ---------------- JSON data helpers ---------------- */
 async function readJSON(file, fallback) {
+  if (USE_SUPABASE) {
+    try {
+      const value = await supabaseGetValue(file.replace('.json', ''));
+      return value === undefined ? fallback : value;
+    } catch (e) {
+      console.error('Supabase readJSON failed, using fallback:', e.message);
+      return fallback;
+    }
+  }
   try {
     const raw = await fs.readFile(path.join(DATA_DIR, file), 'utf8');
     return JSON.parse(raw);
@@ -92,6 +183,10 @@ async function readJSON(file, fallback) {
   }
 }
 async function writeJSON(file, data) {
+  if (USE_SUPABASE) {
+    await supabaseSetValue(file.replace('.json', ''), data);
+    return;
+  }
   await fs.writeFile(path.join(DATA_DIR, file), JSON.stringify(data, null, 2));
 }
 
@@ -240,14 +335,26 @@ async function handleUpload(req, res) {
 
   if (kind === 'pdf') {
     if (mime !== 'application/pdf') return sendJSON(res, 400, { error: 'File must be a PDF' });
+    if (USE_SUPABASE) {
+      await supabaseUpload(SUPABASE_PRIVATE_BUCKET, `pdfs/${filename}`, buffer, mime);
+      return sendJSON(res, 200, { path: `pdfs/${filename}` });
+    }
     await fs.writeFile(path.join(UPLOADS_PDF_DIR, filename), buffer);
     return sendJSON(res, 200, { path: `pdfs/${filename}` }); // internal reference, never served directly
   } else if (kind === 'video') {
     if (!mime.startsWith('video/')) return sendJSON(res, 400, { error: 'File must be a video (mp4, mov or webm)' });
+    if (USE_SUPABASE) {
+      await supabaseUpload(SUPABASE_PUBLIC_BUCKET, `video/${filename}`, buffer, mime);
+      return sendJSON(res, 200, { path: `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_PUBLIC_BUCKET}/video/${filename}` });
+    }
     await fs.writeFile(path.join(UPLOADS_VIDEO_DIR, filename), buffer);
     return sendJSON(res, 200, { path: `/video/uploads/${filename}` });
   } else {
     if (!mime.startsWith('image/')) return sendJSON(res, 400, { error: 'File must be an image' });
+    if (USE_SUPABASE) {
+      await supabaseUpload(SUPABASE_PUBLIC_BUCKET, `img/${filename}`, buffer, mime);
+      return sendJSON(res, 200, { path: `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_PUBLIC_BUCKET}/img/${filename}` });
+    }
     await fs.writeFile(path.join(UPLOADS_IMG_DIR, filename), buffer);
     return sendJSON(res, 200, { path: `/img/uploads/${filename}` });
   }
@@ -428,9 +535,11 @@ const server = http.createServer(async (req, res) => {
       const programs = await readJSON('programs.json', []);
       const program = programs.find(p => p.id === item.programId);
       if (!program?.pdfPath) return sendText(res, 404, 'PDF not uploaded for this program yet. Please contact the seller.');
-      const filePath = path.join(DATA_DIR, 'uploads', program.pdfPath);
       try {
-        const data = await fs.readFile(filePath);
+        const data = USE_SUPABASE
+          ? await supabaseDownload(SUPABASE_PRIVATE_BUCKET, program.pdfPath)
+          : await fs.readFile(path.join(DATA_DIR, 'uploads', program.pdfPath));
+        if (!data) throw new Error('not found');
         res.writeHead(200, {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `attachment; filename="${program.title.replace(/[^a-z0-9]+/gi, '-')}.pdf"`,
