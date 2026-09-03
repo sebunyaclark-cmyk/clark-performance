@@ -429,7 +429,10 @@ img { max-width: 100%; display: block; }
   overflow: hidden;
   background: var(--off-white);
 }
-.about-item-media img, .about-item-media video { width: 100%; height: 100%; object-fit: cover; }
+/* These are mostly club/institution logos — "contain" with a little padding keeps the whole
+   crest and its text visible, instead of "cover" cropping off edges/labels to fill the box. */
+.about-item-media img { width: 100%; height: 100%; object-fit: contain; padding: 10px; background: var(--white); }
+.about-item-media video { width: 100%; height: 100%; object-fit: cover; }
 .about-item-media .video-embed-wrap { width: 100%; height: 100%; }
 .about-item-media.empty {
   display: flex; align-items: center; justify-content: center;
