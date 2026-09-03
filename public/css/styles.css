@@ -55,7 +55,7 @@ h3 { font-size: 1.4rem; }
 }
 
 /* Slow, gentle side-to-side drift — floats out a little and back, on repeat */
-.drift-heading { display: inline-block; animation: driftSlow 6s ease-in-out infinite; }
+.drift-heading { animation: driftSlow 6s ease-in-out infinite; }
 @keyframes driftSlow {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(-14px); }
@@ -65,7 +65,7 @@ h3 { font-size: 1.4rem; }
 }
 
 /* Slow, gentle "breathing" — grows and shrinks very slowly, on repeat */
-.breathe-heading { display: inline-block; animation: breatheSlow 7s ease-in-out infinite; }
+.breathe-heading { animation: breatheSlow 7s ease-in-out infinite; }
 @keyframes breatheSlow {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.045); }
