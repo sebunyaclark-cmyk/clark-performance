@@ -57,7 +57,9 @@ function renderHeader() {
         <button class="nav-toggle" id="navToggle" aria-label="Meny">&#9776;</button>
         <nav class="nav" id="mainNav">
           ${NAV_LINKS.map(l => `<a href="${l.href}" class="${l.key === active ? 'active' : ''}">${l.label}</a>`).join('')}
-          <span class="flag-badge" title="Norsk">🇳🇴</span>
+          <span class="flag-badge" title="Norsk">
+            <svg viewBox="0 0 22 16" width="24" height="17"><rect width="22" height="16" fill="#EF2B2D"/><rect x="6" width="4" height="16" fill="#fff"/><rect y="6" width="22" height="4" fill="#fff"/><rect x="7" width="2" height="16" fill="#002868"/><rect y="7" width="22" height="2" fill="#002868"/></svg>
+          </span>
           <a href="/cart.html" class="cart-link ${active === 'cart' ? 'active' : ''}" aria-label="Cart">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="21" r="1.3" fill="currentColor" stroke="none"/><path d="M2.5 3h2.4l2.2 12.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21 7H6"/></svg>
             <span id="cartBadge" class="cart-badge"></span>
