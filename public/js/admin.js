@@ -436,6 +436,12 @@ async function renderSettings() {
         <input type="file" accept="video/mp4,video/webm,video/quicktime" id="setHeroVideo" />
         ${s.heroVideoPath ? '<label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-weight:400;text-transform:none;letter-spacing:0;"><input type="checkbox" id="setHeroVideoReset" /> Remove custom video and use the default one again</label>' : ''}
       </div>
+      <div class="form-field">
+        <label>"How It Works" section image</label>
+        <p class="form-note" style="margin:0 0 6px;">${s.howItWorksImagePath ? 'Currently using a custom uploaded image.' : 'Currently using the placeholder image.'}</p>
+        <img class="thumb-preview" id="howItWorksThumb" src="${s.howItWorksImagePath || '/img/placeholder-program.svg'}" style="margin-bottom:8px;" />
+        <input type="file" accept="image/*" id="setHowItWorksImg" />
+      </div>
       <button class="btn btn-primary" id="saveHeroBtn">Save</button>
       <span id="heroStatus" class="form-note"></span>
     </div>
@@ -473,6 +479,10 @@ async function renderSettings() {
         patch.heroVideoPath = await uploadFile(file, 'video');
       } else if (resetBox && resetBox.checked) {
         patch.heroVideoPath = '';
+      }
+      const howItWorksFile = document.getElementById('setHowItWorksImg').files[0];
+      if (howItWorksFile) {
+        patch.howItWorksImagePath = await uploadFile(howItWorksFile, 'image');
       }
       const res = await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify(patch) });
       if (!res.ok) throw new Error('Save failed');

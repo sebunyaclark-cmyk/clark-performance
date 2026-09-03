@@ -448,8 +448,8 @@ const server = http.createServer(async (req, res) => {
     }
     if (method === 'GET' && pathname === '/api/settings') {
       const s = await readJSON('settings.json', {});
-      const { siteName, tagline, contactEmail, instagram, tiktok, heroEyebrow, heroHeadline, heroSubtext, heroVideoPath } = s;
-      return sendJSON(res, 200, { siteName, tagline, contactEmail, instagram, tiktok, heroEyebrow, heroHeadline, heroSubtext, heroVideoPath });
+      const { siteName, tagline, contactEmail, instagram, tiktok, heroEyebrow, heroHeadline, heroSubtext, heroVideoPath, howItWorksImagePath } = s;
+      return sendJSON(res, 200, { siteName, tagline, contactEmail, instagram, tiktok, heroEyebrow, heroHeadline, heroSubtext, heroVideoPath, howItWorksImagePath });
     }
 
     /* ---- Contact form ---- */
