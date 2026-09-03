@@ -161,7 +161,7 @@ img { max-width: 100%; display: block; }
 .nav-toggle { display: none; background: none; border: none; color: var(--white); font-size: 1.6rem; cursor: pointer; transition: transform .15s ease; }
 .nav-toggle:active { transform: scale(0.9); }
 
-.flag-badge { display: inline-flex; align-items: center; border-radius: 2px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.15); }
+.flag-badge { display: inline-flex; align-items: center; border-radius: 2px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.15); margin-left: 14px; }
 .cart-link { position: relative; display: inline-flex; align-items: center; color: var(--white); transition: color .15s ease, transform .15s ease; }
 .cart-link:hover, .cart-link.active { color: var(--blue-light); transform: translateY(-1px); }
 .cart-badge {
