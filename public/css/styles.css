@@ -161,6 +161,7 @@ img { max-width: 100%; display: block; }
 .nav-toggle { display: none; background: none; border: none; color: var(--white); font-size: 1.6rem; cursor: pointer; transition: transform .15s ease; }
 .nav-toggle:active { transform: scale(0.9); }
 
+.flag-badge { font-size: 1.3rem; line-height: 1; display: inline-flex; align-items: center; }
 .cart-link { position: relative; display: inline-flex; align-items: center; color: var(--white); transition: color .15s ease, transform .15s ease; }
 .cart-link:hover, .cart-link.active { color: var(--blue-light); transform: translateY(-1px); }
 .cart-badge {
