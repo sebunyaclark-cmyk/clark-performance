@@ -138,7 +138,7 @@
     "shortDescription": "Fine-tune speed, power and technique toward the competition season.",
     "description": "A competition-season program for track & field athletes (sprint/jumps/throws). Focus on peaking form, maintaining power and reducing injury risk between competitions.",
     "priceNok": 990,
-    "imagePath": "/img/placeholder-program.svg",
+    "imagePath": "/img/gallery/track-in-season-finish.png",
     "pdfPath": "",
     "published": true
   },
@@ -151,7 +151,7 @@
     "shortDescription": "Build base strength, power and speed heading into a new season.",
     "description": "An off-season program for track & field athletes who want to build maximal strength, power development and speed foundation before the competition season starts.",
     "priceNok": 1290,
-    "imagePath": "/img/placeholder-program.svg",
+    "imagePath": "/img/gallery/track-off-season-blocks.png",
     "pdfPath": "",
     "published": true
   },
