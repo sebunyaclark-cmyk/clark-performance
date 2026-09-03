@@ -251,6 +251,20 @@ img { max-width: 100%; display: block; }
   .reveal, .reveal-item { opacity: 1; transform: none; transition: none; }
 }
 
+/* "No Shortcuts" gallery images — same hover pop as the cards elsewhere on the site */
+.no-shortcuts-grid .card-media {
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.no-shortcuts-grid .card-media:hover {
+  border-color: var(--blue);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
+  transform: translateY(-3px);
+}
+.no-shortcuts-grid .card-media img { transition: transform .35s ease; }
+.no-shortcuts-grid .card-media:hover img { transform: scale(1.06); }
+
 /* Grids */
 .grid { display: grid; gap: 24px; }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
