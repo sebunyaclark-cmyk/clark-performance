@@ -43,7 +43,7 @@
       box.innerHTML = `
         <span class="eyebrow">Thanks for your purchase!</span>
         <h1>${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
-        <p class="lede">Payment received. I personally build every program around the person training with it — I'm reviewing what you shared now, and will send your finished program to <strong>${order.customerEmail || 'your email'}</strong> within a few days.</p>
+        <p class="lede">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${order.customerEmail || 'your email'}</strong> within 5–10 days.</p>
         <div class="stack" style="margin:24px 0;">
           ${items.map(it => `
             <div style="padding:16px;border:1px solid #E7E8EA;border-radius:4px;">
