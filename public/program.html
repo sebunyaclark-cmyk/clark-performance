@@ -53,29 +53,16 @@
               <button class="btn btn-primary" style="flex:1;min-width:180px;" id="buyBtn">Buy Now</button>
               <button class="btn btn-outline-dark" style="flex:1;min-width:180px;" id="cartBtn">Add to Cart</button>
             </div>
-            <p class="form-note" id="buyNote">You'll receive the full program as a PDF immediately after purchase.</p>
+            <p class="form-note" id="buyNote">Next: a short form about you and your training background, then payment. You'll receive the full program as a PDF right after purchase.</p>
           </div>
         </div>
       `;
 
-      document.getElementById('buyBtn').addEventListener('click', async () => {
-        const btn = document.getElementById('buyBtn');
-        btn.disabled = true;
-        btn.textContent = 'Loading...';
-        try {
-          const res = await fetch('/api/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ programId: program.id }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Something went wrong');
-          window.location.href = data.url;
-        } catch (e) {
-          btn.disabled = false;
-          btn.textContent = 'Buy Program';
-          document.getElementById('buyNote').innerHTML = `<span style="color:#B42318;">${e.message}. Payment isn't set up yet — contact the site owner.</span>`;
-        }
+      document.getElementById('buyBtn').addEventListener('click', () => {
+        // "Buy Now" = start a fresh cart with just this program, then go fill in the
+        // training-background form before checkout (same flow as the cart page).
+        saveCart([{ id: program.id, title: program.title, priceNok: program.priceNok, imagePath: program.imagePath }]);
+        window.location.href = '/cart.html';
       });
 
       document.getElementById('cartBtn').addEventListener('click', () => {

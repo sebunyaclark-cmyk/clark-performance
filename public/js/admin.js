@@ -384,27 +384,58 @@ async function renderContact() {
 }
 
 /* ---------- Orders (read-only) ---------- */
+function athleteInfoHTML(a) {
+  if (!a) return '<p class="form-note">No training-background form for this order (bought before the form existed, or filled in blank).</p>';
+  const rows = [
+    ['Experience', a.experience],
+    ['Position', a.position],
+    ['Age', a.age],
+    ['Strengths', a.strengths],
+    ['Weaknesses', a.weaknesses],
+    ['Wants to develop', a.goals],
+    ['Notes', a.notes],
+  ].filter(([, v]) => v);
+  if (!rows.length) return '<p class="form-note">No training-background form for this order.</p>';
+  return `
+    <div class="stack" style="gap:10px;">
+      ${rows.map(([label, value]) => `
+        <div>
+          <div class="form-note" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:2px;">${label}</div>
+          <div>${value}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 async function renderOrders() {
   const main = document.getElementById('main');
   main.innerHTML = '<p>Loading...</p>';
   const res = await api('/api/admin/orders');
-  const items = await res.json();
+  const orders = await res.json();
   main.innerHTML = `
     <h2 style="margin-bottom:20px;">Orders</h2>
-    <table class="admin-table">
-      <thead><tr><th>Date</th><th>Program</th><th>Email</th><th>Amount</th></tr></thead>
-      <tbody>
-        ${items.slice().reverse().map(i => `
-          <tr>
-            <td>${new Date(i.createdAt).toLocaleString('en-US')}</td>
-            <td>${(i.items || []).map(it => it.programTitle).join(', ') || i.programTitle || ''}</td>
-            <td>${i.customerEmail || ''}</td>
-            <td>${i.amountNok || ''} NOK</td>
-          </tr>
-        `).join('') || '<tr><td colspan="4">No orders yet. Orders will show up here once payment (Stripe) is set up and a customer has purchased.</td></tr>'}
-      </tbody>
-    </table>
+    ${orders.slice().reverse().map(o => `
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:600;">${(o.items || []).map(it => it.programTitle).join(', ') || 'Unknown program'}</div>
+            <p class="form-note" style="margin:4px 0 0;">${new Date(o.createdAt).toLocaleString('en-US')} · ${o.customerEmail || 'no email'} · ${o.amountNok || ''} NOK</p>
+          </div>
+          <button class="btn btn-outline-dark" style="padding:8px 14px;font-size:0.8rem;" data-toggle="${o.id}">Training background</button>
+        </div>
+        <div id="info-${o.id}" style="display:none;margin-top:16px;border-top:1px solid #E7E8EA;padding-top:16px;">
+          ${athleteInfoHTML(o.athleteInfo)}
+        </div>
+      </div>
+    `).join('') || '<p class="form-note">No orders yet. Orders will show up here once payment (Stripe) is set up and a customer has purchased.</p>'}
   `;
+  main.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(`info-${btn.dataset.toggle}`);
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+  });
 }
 
 /* ---------- Settings ---------- */

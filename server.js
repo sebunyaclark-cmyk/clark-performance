@@ -415,16 +415,23 @@ async function recordOrderFromSession(session) {
       downloadToken: crypto.randomUUID(),
     };
   });
+  const pendingIntakes = await readJSON('pending-intakes.json', {});
+  const athleteInfo = pendingIntakes[session.id] || null;
   const order = {
     id: crypto.randomUUID(),
     stripeSessionId: session.id,
     items,
     customerEmail: session.customer_details?.email || session.customer_email || '',
     amountNok: session.amount_total ? session.amount_total / 100 : 0,
+    athleteInfo,
     createdAt: new Date().toISOString(),
   };
   orders.push(order);
   await writeJSON('orders.json', orders);
+  if (athleteInfo) {
+    delete pendingIntakes[session.id];
+    await writeJSON('pending-intakes.json', pendingIntakes);
+  }
   return order;
 }
 
@@ -487,9 +494,13 @@ const server = http.createServer(async (req, res) => {
         .map(id => allPrograms.find(p => p.id === id && p.published))
         .filter(Boolean);
       if (!selected.length) return sendJSON(res, 404, { error: 'Program not found' });
-      const cancelUrl = selected.length === 1 ? `${SITE_URL}/program.html?id=${selected[0].id}` : `${SITE_URL}/cart.html`;
       try {
-        const session = await createCheckoutSession(selected, cancelUrl);
+        const session = await createCheckoutSession(selected, `${SITE_URL}/cart.html`);
+        if (body.intake && typeof body.intake === 'object') {
+          const pending = await readJSON('pending-intakes.json', {});
+          pending[session.id] = body.intake;
+          await writeJSON('pending-intakes.json', pending);
+        }
         return sendJSON(res, 200, { url: session.url });
       } catch (e) {
         console.error(e);

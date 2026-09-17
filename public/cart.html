@@ -46,12 +46,31 @@
             </div>
           `).join('')}
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #E7E8EA;padding-top:20px;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #E7E8EA;padding-top:20px;margin-bottom:28px;">
           <span style="font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-weight:700;font-size:1.1rem;">Total</span>
           <span class="price" style="font-size:1.6rem;">${formatPrice(cartTotal(cart))}</span>
         </div>
+
+        <div class="admin-card" style="margin-bottom:24px;">
+          <h3 style="margin-bottom:4px;">Tell me about yourself</h3>
+          <p class="form-note" style="margin-top:0;margin-bottom:18px;">This helps me get your program right for you. Takes a minute.</p>
+          <div class="form-field">
+            <label>Years of experience (strength training, your sport, etc.)</label>
+            <input id="intakeExperience" placeholder="e.g. 3 years of strength training, 8 years playing football" />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-field"><label>Position</label><input id="intakePosition" placeholder="e.g. Central midfielder" /></div>
+            <div class="form-field"><label>Age</label><input type="number" min="1" max="100" id="intakeAge" /></div>
+          </div>
+          <div class="form-field"><label>Your strengths</label><textarea id="intakeStrengths" style="min-height:70px;" placeholder="What are you already good at?"></textarea></div>
+          <div class="form-field"><label>Your weaknesses</label><textarea id="intakeWeaknesses" style="min-height:70px;" placeholder="What do you struggle with?"></textarea></div>
+          <div class="form-field"><label>What do you want to develop?</label><textarea id="intakeGoals" style="min-height:70px;" placeholder="e.g. First step speed, vertical jump, in-season durability..."></textarea></div>
+          <div class="form-field"><label>Anything else relevant</label><textarea id="intakeNotes" style="min-height:100px;" placeholder="Injuries, equipment access, schedule constraints, anything else I should know"></textarea></div>
+          <p class="form-note" id="intakeError" style="color:#B42318;"></p>
+        </div>
+
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button class="btn btn-primary" style="flex:1;min-width:200px;" id="checkoutBtn">Checkout</button>
+          <button class="btn btn-primary" style="flex:1;min-width:200px;" id="checkoutBtn">Continue to Payment</button>
           <a class="btn btn-outline-dark" href="/programs.html">Add More Programs</a>
         </div>
         <p class="form-note" id="checkoutNote"></p>
@@ -66,20 +85,37 @@
 
       document.getElementById('checkoutBtn').addEventListener('click', async () => {
         const btn = document.getElementById('checkoutBtn');
+        const errorEl = document.getElementById('intakeError');
+        const intake = {
+          experience: document.getElementById('intakeExperience').value.trim(),
+          position: document.getElementById('intakePosition').value.trim(),
+          age: document.getElementById('intakeAge').value.trim(),
+          strengths: document.getElementById('intakeStrengths').value.trim(),
+          weaknesses: document.getElementById('intakeWeaknesses').value.trim(),
+          goals: document.getElementById('intakeGoals').value.trim(),
+          notes: document.getElementById('intakeNotes').value.trim(),
+        };
+        const required = ['experience', 'position', 'age', 'strengths', 'weaknesses', 'goals'];
+        if (required.some(key => !intake[key])) {
+          errorEl.textContent = 'Please fill in all fields above (notes is optional) before continuing to payment.';
+          document.getElementById('intakeExperience').closest('.admin-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        errorEl.textContent = '';
         btn.disabled = true;
         btn.textContent = 'Loading...';
         try {
           const res = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ programIds: getCart().map(item => item.id) }),
+            body: JSON.stringify({ programIds: getCart().map(item => item.id), intake }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Something went wrong');
           window.location.href = data.url;
         } catch (e) {
           btn.disabled = false;
-          btn.textContent = 'Checkout';
+          btn.textContent = 'Continue to Payment';
           document.getElementById('checkoutNote').innerHTML = `<span style="color:#B42318;">${e.message}.</span>`;
         }
       });
