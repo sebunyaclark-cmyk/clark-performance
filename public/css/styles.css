@@ -495,6 +495,21 @@ textarea { resize: vertical; min-height: 130px; }
 .admin-sidebar button.active, .admin-sidebar button:hover { background: var(--off-white); border-left: 3px solid var(--blue); }
 .admin-main { padding: 32px 28px; }
 .admin-card { background: var(--white); border: 1px solid #E7E8EA; border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+
+/* Training-background form on the cart page — a light blue tint so it doesn't read as
+   just another plain white box among the rest of the checkout content. */
+.intake-card {
+  background: linear-gradient(180deg, #EAF2FF 0%, #F5F9FF 100%);
+  border: 1px solid #CFE2FF;
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.intake-card .form-field input,
+.intake-card .form-field textarea {
+  background: var(--white);
+  border-color: #CFE2FF;
+}
 .admin-table { width: 100%; border-collapse: collapse; }
 .admin-table th, .admin-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #E7E8EA; font-size: 0.92rem; }
 .admin-row-actions { display: flex; gap: 8px; }

@@ -51,7 +51,7 @@
           <span class="price" style="font-size:1.6rem;">${formatPrice(cartTotal(cart))}</span>
         </div>
 
-        <div class="admin-card" style="margin-bottom:24px;">
+        <div class="intake-card" style="margin-bottom:24px;">
           <h3 style="margin-bottom:4px;">Tell me about yourself</h3>
           <p class="form-note" style="margin-top:0;margin-bottom:18px;">This helps me get your program right for you. Takes a minute.</p>
           <div class="form-field">
@@ -98,7 +98,7 @@
         const required = ['experience', 'position', 'age', 'strengths', 'weaknesses', 'goals'];
         if (required.some(key => !intake[key])) {
           errorEl.textContent = 'Please fill in all fields above (notes is optional) before continuing to payment.';
-          document.getElementById('intakeExperience').closest('.admin-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          document.getElementById('intakeExperience').closest('.intake-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
         errorEl.textContent = '';
