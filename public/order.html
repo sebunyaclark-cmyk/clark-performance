@@ -43,16 +43,18 @@
       box.innerHTML = `
         <span class="eyebrow">Thanks for your purchase!</span>
         <h1>${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
-        <p class="lede">Your order is confirmed. Download your program PDF${items.length > 1 ? 's' : ''} below.</p>
+        <p class="lede">Payment received. I personally build every program around the person training with it — I'm reviewing what you shared now, and will send your finished program to <strong>${order.customerEmail || 'your email'}</strong> within a few days.</p>
         <div class="stack" style="margin:24px 0;">
           ${items.map(it => `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid #E7E8EA;border-radius:4px;">
+            <div style="padding:16px;border:1px solid #E7E8EA;border-radius:4px;">
               <span style="font-weight:600;">${it.programTitle}</span>
-              <a class="btn btn-primary" style="padding:10px 20px;" href="/api/download/${it.downloadToken}">Download PDF</a>
             </div>
           `).join('')}
         </div>
-        <p class="form-note">A receipt has been sent to ${order.customerEmail || 'your email'}.</p>
+        <p class="form-note">No app, no login needed — it'll land straight in your inbox. A payment receipt has also been sent to ${order.customerEmail || 'your email'}.</p>
+        <div style="margin-top:24px;">
+          <a class="btn btn-outline-dark" href="/index.html">Back to Home</a>
+        </div>
       `;
       clearCart();
     }

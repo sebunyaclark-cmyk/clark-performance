@@ -387,6 +387,7 @@ async function renderContact() {
 function athleteInfoHTML(a) {
   if (!a) return '<p class="form-note">No training-background form for this order (bought before the form existed, or filled in blank).</p>';
   const rows = [
+    ['Send program to', a.deliveryEmail],
     ['Experience', a.experience],
     ['Position', a.position],
     ['Age', a.age],
@@ -414,18 +415,28 @@ async function renderOrders() {
   const res = await api('/api/admin/orders');
   const orders = await res.json();
   main.innerHTML = `
-    <h2 style="margin-bottom:20px;">Orders</h2>
+    <h2 style="margin-bottom:4px;">Orders</h2>
+    <p class="form-note" style="margin-top:0;margin-bottom:20px;">Programs are delivered manually — once ready, copy the download link below and email it to the customer yourself.</p>
     ${orders.slice().reverse().map(o => `
       <div class="admin-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
           <div>
             <div style="font-weight:600;">${(o.items || []).map(it => it.programTitle).join(', ') || 'Unknown program'}</div>
-            <p class="form-note" style="margin:4px 0 0;">${new Date(o.createdAt).toLocaleString('en-US')} · ${o.customerEmail || 'no email'} · ${o.amountNok || ''} NOK</p>
+            <p class="form-note" style="margin:4px 0 0;">${new Date(o.createdAt).toLocaleString('en-US')} · Send to: <strong>${o.athleteInfo?.deliveryEmail || o.customerEmail || 'no email'}</strong> · ${o.amountNok || ''} NOK</p>
           </div>
           <button class="btn btn-outline-dark" style="padding:8px 14px;font-size:0.8rem;" data-toggle="${o.id}">Training background</button>
         </div>
         <div id="info-${o.id}" style="display:none;margin-top:16px;border-top:1px solid #E7E8EA;padding-top:16px;">
           ${athleteInfoHTML(o.athleteInfo)}
+          <div class="stack" style="gap:10px;margin-top:16px;">
+            <div class="form-note" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Download links (send once the PDF is ready)</div>
+            ${(o.items || []).map(it => `
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span style="min-width:160px;">${it.programTitle}:</span>
+                <input readonly value="${location.origin}/api/download/${it.downloadToken}" style="flex:1;min-width:220px;padding:8px 10px;border:1px solid #D9DBDE;border-radius:4px;font-size:0.85rem;" onclick="this.select()" />
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>
     `).join('') || '<p class="form-note">No orders yet. Orders will show up here once payment (Stripe) is set up and a customer has purchased.</p>'}

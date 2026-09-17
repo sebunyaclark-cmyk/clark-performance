@@ -533,7 +533,10 @@ const server = http.createServer(async (req, res) => {
         } catch (e) { /* fall through */ }
       }
       if (!order) return sendJSON(res, 202, { status: 'processing' });
-      return sendJSON(res, 200, { items: order.items || [], customerEmail: order.customerEmail });
+      return sendJSON(res, 200, {
+        items: order.items || [],
+        customerEmail: order.athleteInfo?.deliveryEmail || order.customerEmail,
+      });
     }
 
     /* ---- Secure PDF download (only via a valid order token) ---- */
