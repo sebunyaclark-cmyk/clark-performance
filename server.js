@@ -702,8 +702,13 @@ const server = http.createServer(async (req, res) => {
       return serveStatic(req, res, pathname.replace('/video/uploads', ''), UPLOADS_VIDEO_DIR);
     }
 
-    /* ---- Fallback: static files ---- */
-    if (method === 'GET') return serveStatic(req, res, pathname);
+    /* ---- Lightweight health check (for uptime pingers that keep a free host awake) ---- */
+    if ((method === 'GET' || method === 'HEAD') && pathname === '/api/health') {
+      return sendJSON(res, 200, { ok: true });
+    }
+
+    /* ---- Fallback: static files (HEAD too — many uptime monitors probe with HEAD) ---- */
+    if (method === 'GET' || method === 'HEAD') return serveStatic(req, res, pathname);
 
     sendJSON(res, 404, { error: 'Not found' });
   } catch (err) {
