@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 const SITE_URL = (process.env.SITE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const STRIPE_VIPPS_VERSION = process.env.STRIPE_VIPPS_VERSION || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-password';
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
@@ -365,12 +366,13 @@ async function handleUpload(req, res) {
 }
 
 /* ---------------- Stripe (called directly via fetch — no SDK needed) ---------------- */
-async function stripeRequest(endpoint, formParams, method = 'POST') {
+async function stripeRequest(endpoint, formParams, method = 'POST', extraHeaders = {}) {
   const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
     method,
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
       'Content-Type': 'application/x-www-form-urlencoded',
+      ...extraHeaders,
     },
     body: formParams ? formParams.toString() : undefined,
   });
@@ -391,7 +393,13 @@ async function createCheckoutSession(programs, cancelUrl) {
     params.set(`line_items[${i}][price_data][product_data][name]`, program.title);
   });
   params.set('metadata[programIds]', programs.map(p => p.id).join(','));
-  return stripeRequest('checkout/sessions', params);
+  // Vipps is a Stripe private-preview payment method. Once Stripe has granted the account access,
+  // set STRIPE_VIPPS_VERSION to the Stripe-Version header value Stripe's Vipps docs show (of the
+  // form "<version>.preview; vipps_preview=v1"). It's sent only when creating a Checkout Session,
+  // so every other Stripe call keeps using the account's normal API version. Left unset, nothing
+  // changes — sending the preview header before access is granted would make checkout fail.
+  const extraHeaders = STRIPE_VIPPS_VERSION ? { 'Stripe-Version': STRIPE_VIPPS_VERSION } : {};
+  return stripeRequest('checkout/sessions', params, 'POST', extraHeaders);
 }
 
 function verifyStripeSignature(rawBody, signatureHeader) {
