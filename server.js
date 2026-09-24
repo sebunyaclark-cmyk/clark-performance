@@ -758,8 +758,19 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ---- Lightweight health check (for uptime pingers that keep a free host awake) ---- */
+    // With Supabase, this also does a tiny read so the database sees regular activity (free
+    // projects get paused after about a week idle) and so a paused/unreachable database shows up
+    // as a failing monitor (503) instead of a site that looks fine but has empty data.
     if ((method === 'GET' || method === 'HEAD') && pathname === '/api/health') {
-      return sendJSON(res, 200, { ok: true });
+      if (USE_SUPABASE) {
+        try {
+          await supabaseGetValue('settings');
+        } catch (e) {
+          console.error('Health check: Supabase unreachable:', e.message);
+          return sendJSON(res, 503, { ok: false, error: 'database unreachable' });
+        }
+      }
+      return sendJSON(res, 200, { ok: true, storage: USE_SUPABASE ? 'supabase' : 'local' });
     }
 
     /* ---- Fallback: static files (HEAD too — many uptime monitors probe with HEAD) ---- */
