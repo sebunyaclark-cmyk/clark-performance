@@ -40,19 +40,39 @@
       }
       const order = await res.json();
       const items = order.items || [];
+      const purchasedOn = new Date(order.purchasedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const email = order.customerEmail || 'your email';
       box.innerHTML = `
-        <span class="eyebrow">Thanks for your purchase!</span>
-        <h1>${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
-        <p class="lede">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${order.customerEmail || 'your email'}</strong> within 5–10 days.</p>
-        <div class="stack" style="margin:24px 0;">
-          ${items.map(it => `
-            <div style="padding:16px;border:1px solid #E7E8EA;border-radius:4px;">
-              <span style="font-weight:600;">${it.programTitle}</span>
+        <span class="eyebrow no-print">Thanks for your purchase!</span>
+        <h1 class="no-print">${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
+        <p class="lede no-print">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${email}</strong> within 5–10 days.</p>
+
+        <div class="receipt">
+          <div class="receipt-head">
+            <div>
+              <div class="receipt-title">Receipt</div>
+              <div class="receipt-sub">Clark Performance</div>
             </div>
-          `).join('')}
+            <div class="receipt-meta">
+              <div><span>Order no.</span> ${order.orderNumber}</div>
+              <div><span>Date of purchase</span> ${purchasedOn}</div>
+            </div>
+          </div>
+          <div class="receipt-lines">
+            ${items.map(it => `
+              <div class="receipt-line">
+                <span>${it.programTitle}</span>
+                <span>${it.priceNok != null ? formatPrice(it.priceNok) : ''}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="receipt-total"><span>Total paid</span><span>${formatPrice(order.totalNok)}</span></div>
+          <div class="receipt-foot">Program will be sent to ${email} within 5–10 days.</div>
         </div>
-        <p class="form-note">No app, no login needed — it'll land straight in your inbox. A payment receipt has also been sent to ${order.customerEmail || 'your email'}.</p>
-        <div style="margin-top:24px;">
+
+        <p class="form-note no-print">${order.receiptEmailed ? `A copy of this receipt is also being sent to ${email}. ` : ''}Keep this page for your records — you can print it or save it as a PDF.</p>
+        <div class="no-print" style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
           <a class="btn btn-outline-dark" href="/index.html">Back to Home</a>
         </div>
       `;

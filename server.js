@@ -19,6 +19,10 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-password';
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+// Sender address for customer receipts by email, e.g. "Clark Performance <kvittering@yourdomain.no>".
+// Must be an address on a domain verified in Resend — without it, receipts are only shown on the
+// order page (which the customer can print / save as PDF) and no email is attempted.
+const RESEND_FROM = process.env.RESEND_FROM || '';
 
 if (ADMIN_PASSWORD === 'change-this-password') {
   console.warn('\n⚠️  ADMIN_PASSWORD is not set — using the default password "change-this-password".');
@@ -412,6 +416,7 @@ async function recordOrderFromSession(session) {
     return {
       programId: program?.id || id,
       programTitle: program?.title || 'Unknown program',
+      priceNok: program?.priceNok ?? null,
       downloadToken: crypto.randomUUID(),
     };
   });
@@ -432,7 +437,48 @@ async function recordOrderFromSession(session) {
     delete pendingIntakes[session.id];
     await writeJSON('pending-intakes.json', pendingIntakes);
   }
+  sendReceiptEmail(order).catch(err => console.error('Could not send receipt email:', err.message));
   return order;
+}
+
+/* ---------------- Receipts ---------------- */
+function orderNumber(order) {
+  return 'CP-' + String(order.id).replace(/-/g, '').slice(0, 8).toUpperCase();
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function formatReceiptDate(iso) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Oslo' });
+}
+function formatNok(n) {
+  return `${Number(n).toLocaleString('en-US')} NOK`;
+}
+// Emails the customer a receipt (program(s), purchase date, price, order number). Only runs when
+// Resend is configured with a verified sender; otherwise the on-site receipt page is the receipt.
+async function sendReceiptEmail(order) {
+  if (!RESEND_API_KEY || !RESEND_FROM) return;
+  const recipients = [...new Set([order.customerEmail, order.athleteInfo?.deliveryEmail].filter(Boolean))];
+  if (!recipients.length) return;
+  const rows = order.items.map(it =>
+    `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;">${escapeHtml(it.programTitle)}</td>` +
+    `<td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;">${it.priceNok != null ? formatNok(it.priceNok) : ''}</td></tr>`
+  ).join('');
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#111;">
+      <h2 style="margin-bottom:4px;">Receipt</h2>
+      <p style="color:#666;margin-top:0;">Clark Performance · Order ${orderNumber(order)} · ${formatReceiptDate(order.createdAt)}</p>
+      <table style="width:100%;border-collapse:collapse;">${rows}
+        <tr><td style="padding:12px 0;font-weight:bold;">Total paid</td><td style="padding:12px 0;font-weight:bold;text-align:right;">${formatNok(order.amountNok)}</td></tr>
+      </table>
+      <p>Thank you for your purchase. Your program will be sent to ${escapeHtml(order.athleteInfo?.deliveryEmail || order.customerEmail)} within 5–10 days.</p>
+    </div>`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: RESEND_FROM, to: recipients, subject: `Receipt – Clark Performance (${orderNumber(order)})`, html }),
+  });
+  if (!res.ok) throw new Error(`Resend responded ${res.status}: ${await res.text()}`);
 }
 
 /* ---------------- Router ---------------- */
@@ -533,9 +579,18 @@ const server = http.createServer(async (req, res) => {
         } catch (e) { /* fall through */ }
       }
       if (!order) return sendJSON(res, 202, { status: 'processing' });
+      // Programs are delivered manually, so download tokens are deliberately NOT included here.
+      const items = (order.items || []).map(it => ({
+        programTitle: it.programTitle,
+        priceNok: it.priceNok ?? (order.items.length === 1 ? order.amountNok : null),
+      }));
       return sendJSON(res, 200, {
-        items: order.items || [],
+        orderNumber: orderNumber(order),
+        purchasedAt: order.createdAt,
+        items,
+        totalNok: order.amountNok,
         customerEmail: order.athleteInfo?.deliveryEmail || order.customerEmail,
+        receiptEmailed: !!(RESEND_API_KEY && RESEND_FROM),
       });
     }
 
