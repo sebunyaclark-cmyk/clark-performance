@@ -35,8 +35,10 @@
             <span class="eyebrow">About Me</span>
             <h1>${about.heading}</h1>
             <div id="aboutSocial" style="margin-bottom:16px;"></div>
-            <p class="lede">${about.intro}</p>
-            <p style="white-space:pre-line;">${about.body || ''}</p>
+            <div style="border:1px solid var(--blue); border-radius:4px; padding:20px 24px;">
+              <p class="lede">${about.intro}</p>
+              <p style="white-space:pre-line; margin-bottom:0;">${about.body || ''}</p>
+            </div>
           </div>
         </div>
       `;
