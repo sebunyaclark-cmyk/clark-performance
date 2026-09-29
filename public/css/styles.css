@@ -303,6 +303,7 @@ img { max-width: 100%; display: block; }
 
 /* "No Shortcuts" gallery images — same hover pop as the cards elsewhere on the site */
 .no-shortcuts-grid .card-media {
+  aspect-ratio: 3/4;
   overflow: hidden;
   border: 2px solid transparent;
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
