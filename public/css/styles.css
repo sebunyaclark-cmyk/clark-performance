@@ -70,8 +70,14 @@ h3 { font-size: 1.4rem; }
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.045); }
 }
+/* Stronger version for the hero headline, which needs to read from further away */
+.breathe-heading-strong { animation: breatheStrong 5.5s ease-in-out infinite; }
+@keyframes breatheStrong {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.09); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .breathe-heading { animation: none; }
+  .breathe-heading, .breathe-heading-strong { animation: none; }
 }
 p { margin: 0 0 1em; color: inherit; }
 a { color: inherit; text-decoration: none; }
