@@ -479,7 +479,7 @@ async function sendReceiptEmail(order) {
       <table style="width:100%;border-collapse:collapse;">${rows}
         <tr><td style="padding:12px 0;font-weight:bold;">Total paid</td><td style="padding:12px 0;font-weight:bold;text-align:right;">${formatNok(order.amountNok)}</td></tr>
       </table>
-      <p>Thank you for your purchase. Your program will be sent to ${escapeHtml(order.athleteInfo?.deliveryEmail || order.customerEmail)} within 5–10 days.</p>
+      <p>Thank you for your purchase. Your program will be sent to ${escapeHtml(order.athleteInfo?.deliveryEmail || order.customerEmail)} within 2–10 days.</p>
     </div>`;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',

@@ -46,7 +46,7 @@
         <div class="no-print" style="border:1px solid var(--blue); border-radius:4px; padding:20px 24px; margin-bottom:24px;">
           <span class="eyebrow">Thanks for your purchase!</span>
           <h1 class="breathe-heading">${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
-          <p class="lede" style="margin-bottom:0;">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${email}</strong> within 5–10 days.</p>
+          <p class="lede" style="margin-bottom:0;">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${email}</strong> within 2–10 days.</p>
         </div>
 
         <div class="receipt">
@@ -69,7 +69,7 @@
             `).join('')}
           </div>
           <div class="receipt-total"><span>Total paid</span><span>${formatPrice(order.totalNok)}</span></div>
-          <div class="receipt-foot">Program will be sent to ${email} within 5–10 days.</div>
+          <div class="receipt-foot">Program will be sent to ${email} within 2–10 days.</div>
         </div>
 
         <p class="form-note no-print">${order.receiptEmailed ? `A copy of this receipt is also being sent to ${email}. ` : ''}Keep this page for your records — you can print it or save it as a PDF.</p>
