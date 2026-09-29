@@ -2,7 +2,7 @@
 // Keeps every page free of duplicated markup.
 
 const NAV_LINKS = [
-  { href: '/index.html', label: 'Home', key: 'home' },
+  { href: '/', label: 'Home', key: 'home' },
   { href: '/programs.html', label: 'Programs', key: 'programs' },
   { href: '/about.html', label: 'About', key: 'about' },
   { href: '/athletes.html', label: 'Athletes', key: 'athletes' },
@@ -51,7 +51,7 @@ function renderHeader() {
   mount.innerHTML = `
     <header class="site-header">
       <div class="container">
-        <a class="brand" href="/index.html">
+        <a class="brand" href="/">
           <img src="/img/logo.png" alt="Clark Performance" />
         </a>
         <button class="nav-toggle" id="navToggle" aria-label="Meny">&#9776;</button>
