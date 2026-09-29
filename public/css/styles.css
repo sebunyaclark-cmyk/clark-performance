@@ -70,11 +70,12 @@ h3 { font-size: 1.4rem; }
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.045); }
 }
-/* Stronger version for the hero headline, which needs to read from further away */
-.breathe-heading-strong { animation: breatheStrong 5.5s ease-in-out infinite; }
-@keyframes breatheStrong {
+/* Hero headline's own scale-down of the standard breathe: its font is much larger than
+   other breathing headings, so the same percentage growth reads as noticeably more motion —
+   a smaller percentage here looks visually equivalent to the rest of the site. */
+@keyframes breatheHero {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.055); }
+  50% { transform: scale(1.02); }
 }
 @media (prefers-reduced-motion: reduce) {
   .breathe-heading, .breathe-heading-strong { animation: none; }
@@ -222,7 +223,7 @@ img { max-width: 100%; display: block; }
    animation-delay here isn't enough since .breathe-heading-strong's own "animation" shorthand
    would otherwise get overridden by the more specific ".hero-inner > *" rule above. Combining
    both into one shorthand (entrance once, breathing starting right after) runs the two together. */
-.hero-inner h1.breathe-heading-strong { animation: heroEnter .6s ease .15s forwards, breatheSlow 7s ease-in-out .75s infinite; }
+.hero-inner h1.breathe-heading-strong { animation: heroEnter .6s ease .15s forwards, breatheHero 7s ease-in-out .75s infinite; }
 @media (prefers-reduced-motion: reduce) {
   .hero-inner > * { opacity: 1; animation: none; }
   .hero-inner h1.breathe-heading-strong { animation: none; }
