@@ -215,12 +215,17 @@ img { max-width: 100%; display: block; }
 @keyframes heroEnter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 .hero-inner > * { opacity: 0; animation: heroEnter .6s ease forwards; }
 .hero-inner .eyebrow { animation-delay: .05s; }
-.hero-inner h1 { animation-delay: .15s; }
 .hero-inner .lede { animation-delay: .28s; }
 .hero-inner .hero-cta { animation-delay: .4s; }
 .hero-inner .hero-tags { animation-delay: .5s; }
+/* The headline needs both the entrance fade-up AND the ongoing breathe pulse — a plain
+   animation-delay here isn't enough since .breathe-heading-strong's own "animation" shorthand
+   would otherwise get overridden by the more specific ".hero-inner > *" rule above. Combining
+   both into one shorthand (entrance once, breathing starting right after) runs the two together. */
+.hero-inner h1.breathe-heading-strong { animation: heroEnter .6s ease .15s forwards, breatheStrong 5.5s ease-in-out .75s infinite; }
 @media (prefers-reduced-motion: reduce) {
   .hero-inner > * { opacity: 1; animation: none; }
+  .hero-inner h1.breathe-heading-strong { animation: none; }
 }
 
 .hero-cta { display: flex; gap: 16px; margin-top: 32px; flex-wrap: wrap; }
