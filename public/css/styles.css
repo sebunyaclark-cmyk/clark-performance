@@ -74,7 +74,7 @@ h3 { font-size: 1.4rem; }
 .breathe-heading-strong { animation: breatheStrong 5.5s ease-in-out infinite; }
 @keyframes breatheStrong {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.09); }
+  50% { transform: scale(1.055); }
 }
 @media (prefers-reduced-motion: reduce) {
   .breathe-heading, .breathe-heading-strong { animation: none; }
