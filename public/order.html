@@ -43,9 +43,11 @@
       const purchasedOn = new Date(order.purchasedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
       const email = order.customerEmail || 'your email';
       box.innerHTML = `
-        <span class="eyebrow no-print">Thanks for your purchase!</span>
-        <h1 class="no-print">${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
-        <p class="lede no-print">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${email}</strong> within 5–10 days.</p>
+        <div class="no-print" style="border:1px solid var(--blue); border-radius:4px; padding:20px 24px; margin-bottom:24px;">
+          <span class="eyebrow">Thanks for your purchase!</span>
+          <h1 class="breathe-heading">${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
+          <p class="lede" style="margin-bottom:0;">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${email}</strong> within 5–10 days.</p>
+        </div>
 
         <div class="receipt">
           <div class="receipt-head">
