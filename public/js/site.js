@@ -3,10 +3,10 @@
 
 const NAV_LINKS = [
   { href: '/', label: 'Home', key: 'home' },
-  { href: '/programs.html', label: 'Programs', key: 'programs' },
-  { href: '/about.html', label: 'About', key: 'about' },
-  { href: '/athletes.html', label: 'Athletes', key: 'athletes' },
-  { href: '/contact.html', label: 'Contact', key: 'contact' },
+  { href: '/programs', label: 'Programs', key: 'programs' },
+  { href: '/about', label: 'About', key: 'about' },
+  { href: '/athletes', label: 'Athletes', key: 'athletes' },
+  { href: '/contact', label: 'Contact', key: 'contact' },
 ];
 
 /* ---------- Shopping cart (stored client-side, per browser, until checkout) ---------- */
@@ -57,7 +57,7 @@ function renderHeader() {
         <button class="nav-toggle" id="navToggle" aria-label="Meny">&#9776;</button>
         <nav class="nav" id="mainNav">
           ${NAV_LINKS.map(l => `<a href="${l.href}" class="${l.key === active ? 'active' : ''}">${l.label}</a>`).join('')}
-          <a href="/cart.html" class="cart-link ${active === 'cart' ? 'active' : ''}" aria-label="Cart">
+          <a href="/cart" class="cart-link ${active === 'cart' ? 'active' : ''}" aria-label="Cart">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="21" r="1.3" fill="currentColor" stroke="none"/><path d="M2.5 3h2.4l2.2 12.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21 7H6"/></svg>
             <span id="cartBadge" class="cart-badge"></span>
           </a>
@@ -97,7 +97,7 @@ async function renderFooter() {
           </div>
           <div>
             <h4>Contact</h4>
-            <a href="/contact.html">Contact Form</a>
+            <a href="/contact">Contact Form</a>
             <div style="margin-top:10px;">${socialIconsHTML(settings)}</div>
           </div>
         </div>
@@ -150,7 +150,7 @@ function programCardHTML(p) {
     : p.category === 'beginner' ? 'Beginner'
     : 'General';
   return `
-    <a class="card" href="/program.html?id=${encodeURIComponent(p.id)}">
+    <a class="card" href="/program?id=${encodeURIComponent(p.id)}">
       <div class="card-media"><img src="${p.imagePath}" alt="${p.title}" loading="lazy" /></div>
       <div class="card-body">
         <span class="card-badge">${badge}</span>

@@ -35,7 +35,7 @@
         return;
       }
       if (!res.ok) {
-        box.innerHTML = '<h1>Order not found</h1><p class="lede">Get in touch if you just paid and don\'t see your order.</p><a class="btn btn-outline-dark" href="/contact.html">Contact Me</a>';
+        box.innerHTML = '<h1>Order not found</h1><p class="lede">Get in touch if you just paid and don\'t see your order.</p><a class="btn btn-outline-dark" href="/contact">Contact Me</a>';
         return;
       }
       const order = await res.json();

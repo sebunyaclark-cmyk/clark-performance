@@ -16,8 +16,8 @@
       <h1 id="heroHeadline">Train Like Top Athletes</h1>
       <p class="lede" id="heroSubtext">Get stronger, more explosive and more robust. Better acceleration, higher top speed, and the ability to get past opponents with more power.</p>
       <div class="hero-cta">
-        <a href="/programs.html" class="btn btn-primary">View All Programs</a>
-        <a href="/about.html" class="btn btn-outline-light">About Me</a>
+        <a href="/programs" class="btn btn-primary">View All Programs</a>
+        <a href="/about" class="btn btn-outline-light">About Me</a>
       </div>
       <div class="hero-tags" id="sportTags"></div>
     </div>
@@ -39,7 +39,7 @@
         <p class="lede">Shaped by elite environments — Leeds Beckett University, Leeds United Academy, i2i International Soccer Academy and NCAA Division I at Cal State Northridge — working with athletes at the highest level.</p>
         <div id="aboutPreviewSocial" style="margin-top:16px;"></div>
         <div style="margin-top:24px;">
-          <a href="/about.html" class="btn btn-outline-light">Read More About Me</a>
+          <a href="/about" class="btn btn-outline-light">Read More About Me</a>
         </div>
       </div>
     </div>
@@ -56,7 +56,7 @@
         <div class="skeleton" style="height:340px;"></div>
       </div>
       <div class="text-center" style="margin-top:36px;">
-        <a href="/programs.html" class="btn btn-outline-dark">View All Programs</a>
+        <a href="/programs" class="btn btn-outline-dark">View All Programs</a>
       </div>
     </div>
   </section>
@@ -72,7 +72,7 @@
           <li>Pay securely, right on the site — your program is matched to your training needs and sent to your email within 2–10 days. No app, no subscription.</li>
         </ul>
         <div style="margin-top:28px;">
-          <a href="/programs.html" class="btn btn-primary">View Programs</a>
+          <a href="/programs" class="btn btn-primary">View Programs</a>
         </div>
       </div>
       <img src="/img/placeholder-program.svg" alt="Training" id="howItWorksImg" style="border-radius:4px;object-fit:cover;width:100%;height:100%;" />
@@ -99,7 +99,7 @@
       <p class="lede" style="margin:0 auto 36px;">A small selection of athletes I've worked with over the years.</p>
       <div class="grid grid-3" id="athletePreview"></div>
       <div style="margin-top:36px;">
-        <a href="/athletes.html" class="btn btn-outline-dark">See More</a>
+        <a href="/athletes" class="btn btn-outline-dark">See More</a>
       </div>
     </div>
   </section>
@@ -113,8 +113,8 @@
       { label: 'Strength', id: 'styrke-program' },
     ];
     document.getElementById('sportTags').innerHTML =
-      SPORTS.map(s => `<a class="tag" href="/programs.html?sport=${encodeURIComponent(s)}">${s}</a>`).join('') +
-      GENERAL_TAGS.map(g => `<a class="tag" href="/program.html?id=${g.id}">${g.label}</a>`).join('');
+      SPORTS.map(s => `<a class="tag" href="/programs?sport=${encodeURIComponent(s)}">${s}</a>`).join('') +
+      GENERAL_TAGS.map(g => `<a class="tag" href="/program?id=${g.id}">${g.label}</a>`).join('');
 
     // Static "No Shortcuts" gallery — not fetched from an API, so it's not covered by the
     // programs/athletes initGridReveal() calls below. Wire it up directly here.

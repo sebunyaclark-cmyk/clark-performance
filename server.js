@@ -271,11 +271,26 @@ const MIME = {
 // site (this hero background, athlete videos in the gallery) fail to load or silently never play.
 async function serveStatic(req, res, pathname, baseDir = PUBLIC_DIR) {
   let rel = pathname === '/' ? '/index.html' : pathname;
-  const resolved = path.normalize(path.join(baseDir, rel));
+  let resolved = path.normalize(path.join(baseDir, rel));
   if (!resolved.startsWith(baseDir)) return sendText(res, 403, 'Forbidden');
   try {
-    const stat = await fs.stat(resolved);
-    if (stat.isDirectory()) return sendText(res, 404, 'Not found');
+    let stat;
+    try {
+      stat = await fs.stat(resolved);
+      if (stat.isDirectory()) throw new Error('is-directory');
+    } catch {
+      // Clean-URL fallback: a path with no file extension (e.g. "/programs") that doesn't
+      // match a real file gets one more try as "<path>.html", so every page can be linked
+      // without ".html" in the address bar while /programs.html keeps working too.
+      if (!path.extname(rel)) {
+        resolved = path.normalize(path.join(baseDir, rel + '.html'));
+        if (!resolved.startsWith(baseDir)) return sendText(res, 403, 'Forbidden');
+        stat = await fs.stat(resolved);
+        if (stat.isDirectory()) return sendText(res, 404, 'Not found');
+      } else {
+        throw new Error('not-found');
+      }
+    }
     const ext = path.extname(resolved).toLowerCase();
     const contentType = MIME[ext] || 'application/octet-stream';
     const range = req.headers.range;
