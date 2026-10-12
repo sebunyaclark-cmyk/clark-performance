@@ -435,6 +435,9 @@ async function recordOrderFromSession(session) {
   const orders = await readJSON('orders.json', []);
   const existing = orders.find(o => o.stripeSessionId === session.id);
   if (existing) return existing;
+  // An order the owner deleted in admin (e.g. a test purchase) must not be re-created from Stripe
+  // when its receipt link is opened again, or its emails would go out a second time.
+  if ((await readJSON('deleted-orders.json', [])).includes(session.id)) return null;
   const programs = await readJSON('programs.json', []);
   const programIds = (session.metadata?.programIds || session.metadata?.programId || '')
     .split(',').map(s => s.trim()).filter(Boolean);
@@ -669,7 +672,10 @@ const server = http.createServer(async (req, res) => {
           if (session.payment_status === 'paid') order = await recordOrderFromSession(session);
         } catch (e) { /* fall through */ }
       }
-      if (!order) return sendJSON(res, 202, { status: 'processing' });
+      if (!order) {
+        if ((await readJSON('deleted-orders.json', [])).includes(sessionId)) return sendJSON(res, 404, { error: 'Order not found' });
+        return sendJSON(res, 202, { status: 'processing' });
+      }
       // Programs are delivered manually, so download tokens are deliberately NOT included here.
       const items = (order.items || []).map(it => ({
         programTitle: it.programTitle,
@@ -833,6 +839,22 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/admin/orders' && method === 'GET') {
       if (!requireAdmin(req, res)) return;
       return sendJSON(res, 200, await readJSON('orders.json', []));
+    }
+    // Removes an order from the admin list (it does NOT refund — do that in Stripe). The Stripe
+    // session id is remembered so the order can't reappear via the receipt page's self-heal.
+    if (pathname.startsWith('/api/admin/orders/') && method === 'DELETE') {
+      if (!requireAdmin(req, res)) return;
+      const id = decodeURIComponent(pathname.slice('/api/admin/orders/'.length));
+      const orders = await readJSON('orders.json', []);
+      const order = orders.find(o => o.id === id);
+      if (!order) return sendJSON(res, 404, { error: 'Order not found' });
+      await writeJSON('orders.json', orders.filter(o => o.id !== id));
+      const deleted = await readJSON('deleted-orders.json', []);
+      if (order.stripeSessionId && !deleted.includes(order.stripeSessionId)) {
+        deleted.push(order.stripeSessionId);
+        await writeJSON('deleted-orders.json', deleted);
+      }
+      return sendJSON(res, 200, { ok: true });
     }
     // Lets the owner check the "new order" email setup without making a purchase: sends a sample
     // notification and says exactly what's missing or what Resend answered (never the key itself).

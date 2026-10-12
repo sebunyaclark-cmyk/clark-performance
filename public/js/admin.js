@@ -437,6 +437,10 @@ async function renderOrders() {
               </div>
             `).join('')}
           </div>
+          <div style="margin-top:20px;border-top:1px solid #E7E8EA;padding-top:14px;">
+            <button class="btn btn-outline-dark" style="padding:8px 14px;font-size:0.8rem;color:#B42318;border-color:#B42318;" data-del-order="${o.id}">Delete order</button>
+            <span class="form-note" style="margin-left:8px;">Removes it from this list only. It does not refund — do that in Stripe.</span>
+          </div>
         </div>
       </div>
     `).join('') || '<p class="form-note">No orders yet. Orders will show up here once payment (Stripe) is set up and a customer has purchased.</p>'}
@@ -445,6 +449,14 @@ async function renderOrders() {
     btn.addEventListener('click', () => {
       const panel = document.getElementById(`info-${btn.dataset.toggle}`);
       panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+  main.querySelectorAll('[data-del-order]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this order from the list? This does NOT refund the customer, and the training-background answers and download links are lost. This can\'t be undone.')) return;
+      const r = await api(`/api/admin/orders/${btn.dataset.delOrder}`, { method: 'DELETE' });
+      if (!r.ok) { alert('Could not delete the order.'); return; }
+      renderOrders();
     });
   });
 }
