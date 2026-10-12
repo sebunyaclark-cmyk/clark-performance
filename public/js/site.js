@@ -145,6 +145,21 @@ function formatPrice(nok) {
   return nok.toLocaleString('en-US') + ' NOK';
 }
 
+/* ---------- Program titles ---------- */
+// Titles look like "Football – In-Season". Left to wrap on its own, a long title breaks inside
+// "In-Season" ("IN-" / "SEASON") and shows both the dash and the hyphen.
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// Big headline: one clean line per part — "Football" / "In-Season" — and no dash between them.
+function titleStackedHTML(title) {
+  return String(title).split(/\s+[–—]\s+/).map(part => `<span style="display:block;">${escHtml(part)}</span>`).join('');
+}
+// Smaller single-line titles (cards): keep the text, but never break inside a hyphenated word.
+function titleNoBreakHTML(title) {
+  return String(title).split(' ').map(w => w.includes('-') ? `<span style="white-space:nowrap;">${escHtml(w)}</span>` : escHtml(w)).join(' ');
+}
+
 function seasonLabel(season) {
   if (season === 'in-season') return 'In-Season';
   if (season === 'off-season') return 'Off-Season';
@@ -160,7 +175,7 @@ function programCardHTML(p) {
       <div class="card-media"><img src="${p.imagePath}" alt="${p.title}" loading="lazy" /></div>
       <div class="card-body">
         <span class="card-badge">${badge}</span>
-        <h3>${p.title}</h3>
+        <h3>${titleNoBreakHTML(p.title)}</h3>
         <p>${p.shortDescription}</p>
         <div class="card-footer">
           <span class="price">${formatPrice(p.priceNok)}</span>

@@ -45,7 +45,7 @@
       box.innerHTML = `
         <div class="no-print" style="border:1px solid var(--blue); border-radius:4px; padding:20px 24px; margin-bottom:24px;">
           <span class="eyebrow">Thanks for your purchase!</span>
-          <h1 class="breathe-heading">${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle || 'Order confirmed')}</h1>
+          <h1 class="breathe-heading">${items.length > 1 ? `${items.length} programs purchased` : (items[0]?.programTitle ? titleStackedHTML(items[0].programTitle) : 'Order confirmed')}</h1>
           <p class="lede" style="margin-bottom:0;">Payment received. Your answers are used to match the program to your training needs — your finished program will be sent to <strong>${email}</strong> within 2–10 days.</p>
         </div>
 
