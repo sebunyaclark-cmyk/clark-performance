@@ -831,6 +831,35 @@ const server = http.createServer(async (req, res) => {
       if (!requireAdmin(req, res)) return;
       return sendJSON(res, 200, await readJSON('orders.json', []));
     }
+    // Lets the owner check the "new order" email setup without making a purchase: sends a sample
+    // notification and says exactly what's missing or what Resend answered (never the key itself).
+    if (pathname === '/api/admin/test-notification' && method === 'POST') {
+      if (!requireAdmin(req, res)) return;
+      if (!RESEND_API_KEY) return sendJSON(res, 400, { error: 'RESEND_API_KEY is not set on the server.' });
+      if (!ORDER_NOTIFY_EMAIL) return sendJSON(res, 400, { error: 'ORDER_NOTIFY_EMAIL is not set on the server.' });
+      try {
+        await sendOrderNotification({
+          id: crypto.randomUUID(),
+          items: [{ programTitle: 'TEST – Football – In-Season', priceNok: 990 }],
+          customerEmail: 'customer-payment@example.com',
+          amountNok: 990,
+          createdAt: new Date().toISOString(),
+          athleteInfo: {
+            deliveryEmail: 'athlete@example.com',
+            experience: 'Sample answer: 3 years of strength training',
+            position: 'Central midfielder',
+            age: '19',
+            strengths: 'Sample answer',
+            weaknesses: 'Sample answer',
+            goals: 'Sample answer',
+            notes: 'This is only a test email sent from the admin panel — no real order.',
+          },
+        });
+        return sendJSON(res, 200, { ok: true, sentTo: ORDER_NOTIFY_EMAIL });
+      } catch (e) {
+        return sendJSON(res, 502, { error: e.message });
+      }
+    }
 
     /* ---- Admin: upload ---- */
     if (pathname === '/api/admin/upload' && method === 'POST') {

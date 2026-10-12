@@ -488,6 +488,12 @@ async function renderSettings() {
       <span id="heroStatus" class="form-note"></span>
     </div>
     <div class="admin-card">
+      <h3>New-order email</h3>
+      <p class="form-note" style="margin-top:-4px;">Every paid order is emailed to you with the program, price and everything the customer filled in. Send a sample to check that it's set up.</p>
+      <button class="btn btn-outline-dark" id="testNotifBtn">Send test email</button>
+      <span id="testNotifStatus" class="form-note"></span>
+    </div>
+    <div class="admin-card">
       <h3>Payment &amp; integrations</h3>
       <p class="form-note">Stripe (payment) and MCP/AI design tools are connected via environment variables on the server, not here in the panel. See the README.md that shipped with the site for the exact steps when you're ready to add them.</p>
     </div>
@@ -505,6 +511,23 @@ async function renderSettings() {
     const r = await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify(patch) });
     status.textContent = r.ok ? 'Saved ✓' : 'Error saving';
     setTimeout(() => status.textContent = '', 2000);
+  });
+  document.getElementById('testNotifBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('testNotifBtn');
+    const status = document.getElementById('testNotifStatus');
+    btn.disabled = true;
+    status.style.color = '';
+    status.textContent = 'Sending...';
+    try {
+      const r = await api('/api/admin/test-notification', { method: 'POST' });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Could not send');
+      status.textContent = `Sent to ${data.sentTo} ✓ — check your inbox (and spam).`;
+    } catch (e) {
+      status.style.color = '#B42318';
+      status.textContent = e.message;
+    }
+    btn.disabled = false;
   });
   document.getElementById('saveHeroBtn').addEventListener('click', async () => {
     const status = document.getElementById('heroStatus');
