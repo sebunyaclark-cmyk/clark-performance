@@ -24,6 +24,10 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 // Must be an address on a domain verified in Resend — without it, receipts are only shown on the
 // order page (which the customer can print / save as PDF) and no email is attempted.
 const RESEND_FROM = process.env.RESEND_FROM || '';
+// Where "new order" notifications (program, price and the customer's whole intake form) are sent.
+// Needs only RESEND_API_KEY: without a verified domain Resend lets "onboarding@resend.dev" send to
+// the email the Resend account itself was created with, so use that address here.
+const ORDER_NOTIFY_EMAIL = process.env.ORDER_NOTIFY_EMAIL || '';
 
 if (ADMIN_PASSWORD === 'change-this-password') {
   console.warn('\n⚠️  ADMIN_PASSWORD is not set — using the default password "change-this-password".');
@@ -461,6 +465,7 @@ async function recordOrderFromSession(session) {
     await writeJSON('pending-intakes.json', pendingIntakes);
   }
   sendReceiptEmail(order).catch(err => console.error('Could not send receipt email:', err.message));
+  sendOrderNotification(order).catch(err => console.error('Could not send order notification:', err.message));
   return order;
 }
 
@@ -477,6 +482,66 @@ function formatReceiptDate(iso) {
 function formatNok(n) {
   return `${Number(n).toLocaleString('en-US')} NOK`;
 }
+// Emails the site owner every new order: which program(s) and price, plus everything the customer
+// filled in on the checkout form (training background, goals, delivery email, ...). Reply-To is the
+// customer's delivery email so replying to the notification writes straight to them.
+async function sendOrderNotification(order) {
+  if (!RESEND_API_KEY || !ORDER_NOTIFY_EMAIL) return;
+  const info = order.athleteInfo || {};
+  const field = (label, value) => `
+    <tr>
+      <td style="padding:8px 12px 8px 0;vertical-align:top;color:#666;white-space:nowrap;">${label}</td>
+      <td style="padding:8px 0;white-space:pre-wrap;">${value ? escapeHtml(value) : '<span style="color:#aaa;">–</span>'}</td>
+    </tr>`;
+  const items = order.items.map(it =>
+    `<tr><td style="padding:6px 0;">${escapeHtml(it.programTitle)}</td>` +
+    `<td style="padding:6px 0;text-align:right;">${it.priceNok != null ? formatNok(it.priceNok) : ''}</td></tr>`
+  ).join('');
+  const deliveryEmail = info.deliveryEmail || order.customerEmail;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111;">
+      <h2 style="margin-bottom:4px;">New order ${orderNumber(order)}</h2>
+      <p style="color:#666;margin-top:0;">${formatReceiptDate(order.createdAt)}</p>
+
+      <h3 style="margin:24px 0 6px;">Program</h3>
+      <table style="width:100%;border-collapse:collapse;border-top:1px solid #eee;border-bottom:1px solid #eee;">${items}
+        <tr><td style="padding:10px 0;font-weight:bold;border-top:1px solid #eee;">Total paid</td><td style="padding:10px 0;font-weight:bold;text-align:right;border-top:1px solid #eee;">${formatNok(order.amountNok)}</td></tr>
+      </table>
+
+      <h3 style="margin:24px 0 6px;">Customer</h3>
+      <table style="width:100%;border-collapse:collapse;">
+        ${field('Send program to', deliveryEmail)}
+        ${field('Payment email', order.customerEmail)}
+      </table>
+
+      <h3 style="margin:24px 0 6px;">About the athlete</h3>
+      <table style="width:100%;border-collapse:collapse;">
+        ${field('Experience', info.experience)}
+        ${field('Position', info.position)}
+        ${field('Age', info.age)}
+        ${field('Strengths', info.strengths)}
+        ${field('Weaknesses', info.weaknesses)}
+        ${field('Wants to develop', info.goals)}
+        ${field('Anything else', info.notes)}
+      </table>
+
+      <p style="margin-top:28px;"><a href="${SITE_URL}/admin/login.html">Open admin → Orders</a></p>
+    </div>`;
+  const payload = {
+    from: RESEND_FROM || 'Clark Performance <onboarding@resend.dev>',
+    to: [ORDER_NOTIFY_EMAIL],
+    subject: `New order ${orderNumber(order)} – ${order.items.map(i => i.programTitle).join(', ')} (${formatNok(order.amountNok)})`,
+    html,
+  };
+  if (deliveryEmail) payload.reply_to = deliveryEmail;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Resend responded ${res.status}: ${await res.text()}`);
+}
+
 // Emails the customer a receipt (program(s), purchase date, price, order number). Only runs when
 // Resend is configured with a verified sender; otherwise the on-site receipt page is the receipt.
 async function sendReceiptEmail(order) {
