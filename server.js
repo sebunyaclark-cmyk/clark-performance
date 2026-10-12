@@ -561,10 +561,13 @@ async function sendReceiptEmail(order) {
       </table>
       <p>Thank you for your purchase. Your program will be sent to ${escapeHtml(order.athleteInfo?.deliveryEmail || order.customerEmail)} within 2–10 days.</p>
     </div>`;
+  const payload = { from: RESEND_FROM, to: recipients, subject: `Receipt – Clark Performance (${orderNumber(order)})`, html };
+  // The sender address is a no-reply style mailbox, so point replies at the owner.
+  if (ORDER_NOTIFY_EMAIL) payload.reply_to = ORDER_NOTIFY_EMAIL;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: RESEND_FROM, to: recipients, subject: `Receipt – Clark Performance (${orderNumber(order)})`, html }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Resend responded ${res.status}: ${await res.text()}`);
 }
