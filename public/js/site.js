@@ -22,10 +22,16 @@ function saveCart(cart) {
   try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* storage unavailable */ }
   updateCartBadge();
 }
-function addToCart(program) {
+// Each cart item carries its own filled-in "about the athlete" form (`intake`), because the form
+// now lives on the program page. Adding a program that's already in the cart updates its answers.
+function addToCart(program, intake) {
   const cart = getCart();
-  if (cart.some(item => item.id === program.id)) return cart; // one of each program
-  cart.push({ id: program.id, title: program.title, priceNok: program.priceNok, imagePath: program.imagePath });
+  const existing = cart.find(item => item.id === program.id); // one of each program
+  if (existing) {
+    if (intake) { existing.intake = intake; saveCart(cart); }
+    return cart;
+  }
+  cart.push({ id: program.id, title: program.title, priceNok: program.priceNok, imagePath: program.imagePath, intake: intake || null });
   saveCart(cart);
   return cart;
 }

@@ -384,6 +384,21 @@ async function renderContact() {
 }
 
 /* ---------- Orders (read-only) ---------- */
+// Customer-typed text is shown in this panel, so it's always escaped before going into the page.
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// One filled-in form per program; orders from before that have a single shared form on the order.
+function orderIntakeBlocks(o) {
+  const own = (o.items || []).filter(it => it.athleteInfo).map(it => ({ title: it.programTitle, info: it.athleteInfo }));
+  if (own.length) return own;
+  if (o.athleteInfo) return [{ title: (o.items || []).map(it => it.programTitle).join(', '), info: o.athleteInfo }];
+  return [];
+}
+function orderEmails(o) {
+  const emails = [...new Set(orderIntakeBlocks(o).map(b => b.info.deliveryEmail).filter(Boolean))];
+  return emails.length ? emails : [o.customerEmail].filter(Boolean);
+}
 function athleteInfoHTML(a) {
   if (!a) return '<p class="form-note">No training-background form for this order (bought before the form existed, or filled in blank).</p>';
   const rows = [
@@ -402,7 +417,7 @@ function athleteInfoHTML(a) {
       ${rows.map(([label, value]) => `
         <div>
           <div class="form-note" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:2px;">${label}</div>
-          <div>${value}</div>
+          <div style="white-space:pre-wrap;">${escapeHtml(value)}</div>
         </div>
       `).join('')}
     </div>
@@ -422,12 +437,17 @@ async function renderOrders() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
           <div>
             <div style="font-weight:600;">${(o.items || []).map(it => it.programTitle).join(', ') || 'Unknown program'}</div>
-            <p class="form-note" style="margin:4px 0 0;">${new Date(o.createdAt).toLocaleString('en-US')} · Send to: <strong>${o.athleteInfo?.deliveryEmail || o.customerEmail || 'no email'}</strong> · ${o.amountNok || ''} NOK</p>
+            <p class="form-note" style="margin:4px 0 0;">${new Date(o.createdAt).toLocaleString('en-US')} · Send to: <strong>${escapeHtml(orderEmails(o).join(', ') || 'no email')}</strong> · ${o.amountNok || ''} NOK</p>
           </div>
           <button class="btn btn-outline-dark" style="padding:8px 14px;font-size:0.8rem;" data-toggle="${o.id}">Training background</button>
         </div>
         <div id="info-${o.id}" style="display:none;margin-top:16px;border-top:1px solid #E7E8EA;padding-top:16px;">
-          ${athleteInfoHTML(o.athleteInfo)}
+          ${orderIntakeBlocks(o).map(b => `
+            <div style="margin-bottom:18px;">
+              <div style="font-weight:700;margin-bottom:8px;">${escapeHtml(b.title)}</div>
+              ${athleteInfoHTML(b.info)}
+            </div>
+          `).join('') || athleteInfoHTML(null)}
           <div class="stack" style="gap:10px;margin-top:16px;">
             <div class="form-note" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Download links (send once the PDF is ready)</div>
             ${(o.items || []).map(it => `

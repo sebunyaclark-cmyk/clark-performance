@@ -78,7 +78,9 @@
           <a class="btn btn-outline-dark" href="/">Back to Home</a>
         </div>
       `;
-      clearCart();
+      // Only the programs just paid for leave the cart (Buy Now leaves other cart items alone).
+      if (order.programIds && order.programIds.length) order.programIds.forEach(removeFromCart);
+      else clearCart();
     }
     poll(0);
   </script>

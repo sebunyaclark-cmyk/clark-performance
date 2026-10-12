@@ -431,6 +431,30 @@ function verifyStripeSignature(rawBody, signatureHeader) {
   } catch { return false; }
 }
 
+// The checkout form is customer-typed text that ends up in the admin panel and in emails, so only
+// the known fields are kept, as trimmed strings of limited length.
+const INTAKE_FIELDS = ['deliveryEmail', 'experience', 'position', 'age', 'strengths', 'weaknesses', 'goals', 'notes'];
+function cleanIntake(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const out = {};
+  for (const key of INTAKE_FIELDS) {
+    if (raw[key] != null) out[key] = String(raw[key]).trim().slice(0, key === 'deliveryEmail' ? 200 : 3000);
+  }
+  return Object.keys(out).length ? out : null;
+}
+// One form per program now; older orders have a single shared form on order.athleteInfo.
+function intakeBlocks(order) {
+  const own = (order.items || []).filter(it => it.athleteInfo).map(it => ({ title: it.programTitle, info: it.athleteInfo }));
+  if (own.length) return own;
+  if (order.athleteInfo) return [{ title: (order.items || []).map(it => it.programTitle).join(', '), info: order.athleteInfo }];
+  return [];
+}
+// Where the finished program(s) should be sent: every delivery email given in the forms.
+function deliveryEmails(order) {
+  const emails = [...new Set(intakeBlocks(order).map(b => b.info.deliveryEmail).filter(Boolean))];
+  return emails.length ? emails : [order.customerEmail].filter(Boolean);
+}
+
 async function recordOrderFromSession(session) {
   const orders = await readJSON('orders.json', []);
   const existing = orders.find(o => o.stripeSessionId === session.id);
@@ -441,6 +465,11 @@ async function recordOrderFromSession(session) {
   const programs = await readJSON('programs.json', []);
   const programIds = (session.metadata?.programIds || session.metadata?.programId || '')
     .split(',').map(s => s.trim()).filter(Boolean);
+  const pendingIntakes = await readJSON('pending-intakes.json', {});
+  const pending = pendingIntakes[session.id] || null;
+  // New checkouts store { byProgram: { <programId>: form } }; a session started before this
+  // change stored one shared form, which then applies to every program in the order.
+  const sharedForm = pending && !pending.byProgram ? pending : null;
   const items = programIds.map(id => {
     const program = programs.find(p => p.id === id);
     return {
@@ -448,10 +477,11 @@ async function recordOrderFromSession(session) {
       programTitle: program?.title || 'Unknown program',
       priceNok: program?.priceNok ?? null,
       downloadToken: crypto.randomUUID(),
+      athleteInfo: pending?.byProgram?.[id] || sharedForm || null,
     };
   });
-  const pendingIntakes = await readJSON('pending-intakes.json', {});
-  const athleteInfo = pendingIntakes[session.id] || null;
+  // order.athleteInfo stays as the first program's form so anything reading the old field still works.
+  const athleteInfo = items.find(it => it.athleteInfo)?.athleteInfo || null;
   const order = {
     id: crypto.randomUUID(),
     stripeSessionId: session.id,
@@ -463,7 +493,7 @@ async function recordOrderFromSession(session) {
   };
   orders.push(order);
   await writeJSON('orders.json', orders);
-  if (athleteInfo) {
+  if (pending) {
     delete pendingIntakes[session.id];
     await writeJSON('pending-intakes.json', pendingIntakes);
   }
@@ -490,7 +520,6 @@ function formatNok(n) {
 // customer's delivery email so replying to the notification writes straight to them.
 async function sendOrderNotification(order) {
   if (!RESEND_API_KEY || !ORDER_NOTIFY_EMAIL) return;
-  const info = order.athleteInfo || {};
   const field = (label, value) => `
     <tr>
       <td style="padding:8px 12px 8px 0;vertical-align:top;color:#666;white-space:nowrap;">${label}</td>
@@ -500,7 +529,22 @@ async function sendOrderNotification(order) {
     `<tr><td style="padding:6px 0;">${escapeHtml(it.programTitle)}</td>` +
     `<td style="padding:6px 0;text-align:right;">${it.priceNok != null ? formatNok(it.priceNok) : ''}</td></tr>`
   ).join('');
-  const deliveryEmail = info.deliveryEmail || order.customerEmail;
+  const emails = deliveryEmails(order);
+  // One block per program: each program has its own filled-in form (possibly for another athlete).
+  const blocks = intakeBlocks(order).map(({ title, info }) => `
+      <h3 style="margin:24px 0 6px;">${escapeHtml(title)}</h3>
+      <table style="width:100%;border-collapse:collapse;">
+        ${field('Send program to', info.deliveryEmail || emails[0])}
+        ${field('Experience', info.experience)}
+        ${field('Position', info.position)}
+        ${field('Age', info.age)}
+        ${field('Strengths', info.strengths)}
+        ${field('Weaknesses', info.weaknesses)}
+        ${field('Wants to develop', info.goals)}
+        ${field('Anything else', info.notes)}
+      </table>`).join('') || `
+      <h3 style="margin:24px 0 6px;">Send program to</h3>
+      <table style="width:100%;border-collapse:collapse;">${field('Email', emails[0])}</table>`;
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111;">
       <h2 style="margin-bottom:4px;">New order ${orderNumber(order)}</h2>
@@ -513,20 +557,9 @@ async function sendOrderNotification(order) {
 
       <h3 style="margin:24px 0 6px;">Customer</h3>
       <table style="width:100%;border-collapse:collapse;">
-        ${field('Send program to', deliveryEmail)}
         ${field('Payment email', order.customerEmail)}
       </table>
-
-      <h3 style="margin:24px 0 6px;">About the athlete</h3>
-      <table style="width:100%;border-collapse:collapse;">
-        ${field('Experience', info.experience)}
-        ${field('Position', info.position)}
-        ${field('Age', info.age)}
-        ${field('Strengths', info.strengths)}
-        ${field('Weaknesses', info.weaknesses)}
-        ${field('Wants to develop', info.goals)}
-        ${field('Anything else', info.notes)}
-      </table>
+      ${blocks}
 
       <p style="margin-top:28px;"><a href="${SITE_URL}/admin/login.html">Open admin → Orders</a></p>
     </div>`;
@@ -536,7 +569,7 @@ async function sendOrderNotification(order) {
     subject: `New order ${orderNumber(order)} – ${order.items.map(i => i.programTitle).join(', ')} (${formatNok(order.amountNok)})`,
     html,
   };
-  if (deliveryEmail) payload.reply_to = deliveryEmail;
+  if (emails[0]) payload.reply_to = emails[0];
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -549,7 +582,7 @@ async function sendOrderNotification(order) {
 // Resend is configured with a verified sender; otherwise the on-site receipt page is the receipt.
 async function sendReceiptEmail(order) {
   if (!RESEND_API_KEY || !RESEND_FROM) return;
-  const recipients = [...new Set([order.customerEmail, order.athleteInfo?.deliveryEmail].filter(Boolean))];
+  const recipients = [...new Set([order.customerEmail, ...deliveryEmails(order)].filter(Boolean))];
   if (!recipients.length) return;
   const rows = order.items.map(it =>
     `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;">${escapeHtml(it.programTitle)}</td>` +
@@ -562,7 +595,7 @@ async function sendReceiptEmail(order) {
       <table style="width:100%;border-collapse:collapse;">${rows}
         <tr><td style="padding:12px 0;font-weight:bold;">Total paid</td><td style="padding:12px 0;font-weight:bold;text-align:right;">${formatNok(order.amountNok)}</td></tr>
       </table>
-      <p>Thank you for your purchase. Your program will be sent to ${escapeHtml(order.athleteInfo?.deliveryEmail || order.customerEmail)} within 2–10 days.</p>
+      <p>Thank you for your purchase. Your program will be sent to ${escapeHtml(deliveryEmails(order).join(', '))} within 2–10 days.</p>
     </div>`;
   const payload = { from: RESEND_FROM, to: recipients, subject: `Receipt – Clark Performance (${orderNumber(order)})`, html };
   // The sender address is a no-reply style mailbox, so point replies at the owner.
@@ -627,18 +660,32 @@ const server = http.createServer(async (req, res) => {
     if (method === 'POST' && pathname === '/api/checkout') {
       if (!STRIPE_SECRET_KEY) return sendJSON(res, 400, { error: 'Payment is not set up yet' });
       const body = await readJSONBody(req);
-      const ids = Array.isArray(body.programIds) ? body.programIds : (body.programId ? [body.programId] : []);
-      if (!ids.length) return sendJSON(res, 400, { error: 'No programs given' });
+      // New shape: items = [{ programId, intake }], one filled-in form per program. The old shape
+      // (programIds + one shared intake) is still accepted so an open cart page keeps working.
+      const entries = Array.isArray(body.items)
+        ? body.items.map(e => ({ programId: e && e.programId, intake: e && e.intake }))
+        : (Array.isArray(body.programIds) ? body.programIds : (body.programId ? [body.programId] : []))
+            .map(id => ({ programId: id, intake: body.intake }));
+      if (!entries.length) return sendJSON(res, 400, { error: 'No programs given' });
       const allPrograms = await readJSON('programs.json', []);
-      const selected = ids
-        .map(id => allPrograms.find(p => p.id === id && p.published))
-        .filter(Boolean);
+      const selected = [];
+      const intakes = {};
+      for (const e of entries) {
+        const program = allPrograms.find(p => p.id === e.programId && p.published);
+        if (!program || selected.includes(program)) continue;
+        selected.push(program);
+        const intake = cleanIntake(e.intake);
+        if (intake) intakes[program.id] = intake;
+      }
       if (!selected.length) return sendJSON(res, 404, { error: 'Program not found' });
       try {
-        const session = await createCheckoutSession(selected, `${SITE_URL}/cart.html`);
-        if (body.intake && typeof body.intake === 'object') {
+        // Where "back" at the payment page leads: only a plain on-site path is accepted.
+        const cancelPath = typeof body.cancelPath === 'string' && /^\/[A-Za-z0-9\-_/?=&.%]*$/.test(body.cancelPath) && !body.cancelPath.startsWith('//')
+          ? body.cancelPath : '/cart';
+        const session = await createCheckoutSession(selected, `${SITE_URL}${cancelPath}`);
+        if (Object.keys(intakes).length) {
           const pending = await readJSON('pending-intakes.json', {});
-          pending[session.id] = body.intake;
+          pending[session.id] = { byProgram: intakes };
           await writeJSON('pending-intakes.json', pending);
         }
         return sendJSON(res, 200, { url: session.url });
@@ -685,8 +732,9 @@ const server = http.createServer(async (req, res) => {
         orderNumber: orderNumber(order),
         purchasedAt: order.createdAt,
         items,
+        programIds: (order.items || []).map(it => it.programId).filter(Boolean),
         totalNok: order.amountNok,
-        customerEmail: order.athleteInfo?.deliveryEmail || order.customerEmail,
+        customerEmail: deliveryEmails(order).join(', '),
         receiptEmailed: !!(RESEND_API_KEY && RESEND_FROM),
       });
     }
@@ -865,20 +913,23 @@ const server = http.createServer(async (req, res) => {
       try {
         await sendOrderNotification({
           id: crypto.randomUUID(),
-          items: [{ programTitle: 'TEST – Football – In-Season', priceNok: 990 }],
+          items: [{
+            programTitle: 'TEST – Football – In-Season',
+            priceNok: 990,
+            athleteInfo: {
+              deliveryEmail: 'athlete@example.com',
+              experience: 'Sample answer: 3 years of strength training',
+              position: 'Central midfielder',
+              age: '19',
+              strengths: 'Sample answer',
+              weaknesses: 'Sample answer',
+              goals: 'Sample answer',
+              notes: 'This is only a test email sent from the admin panel — no real order.',
+            },
+          }],
           customerEmail: 'customer-payment@example.com',
           amountNok: 990,
           createdAt: new Date().toISOString(),
-          athleteInfo: {
-            deliveryEmail: 'athlete@example.com',
-            experience: 'Sample answer: 3 years of strength training',
-            position: 'Central midfielder',
-            age: '19',
-            strengths: 'Sample answer',
-            weaknesses: 'Sample answer',
-            goals: 'Sample answer',
-            notes: 'This is only a test email sent from the admin panel — no real order.',
-          },
         });
         return sendJSON(res, 200, { ok: true, sentTo: ORDER_NOTIFY_EMAIL });
       } catch (e) {

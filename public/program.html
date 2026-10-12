@@ -49,28 +49,114 @@
             <div style="display:flex;align-items:center;gap:20px;margin:24px 0;">
               <span class="price" style="font-size:2rem;">${formatPrice(program.priceNok)}</span>
             </div>
-            <div id="buyArea" style="display:flex;gap:12px;flex-wrap:wrap;">
-              <button class="btn btn-primary" style="flex:1;min-width:180px;" id="buyBtn">Buy Now</button>
-              <button class="btn btn-outline-dark" style="flex:1;min-width:180px;" id="cartBtn">Add to Cart</button>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn btn-primary js-buy" style="flex:1;min-width:180px;">Buy Now</button>
+              <button class="btn btn-outline-dark js-cart" style="flex:1;min-width:180px;">Add to Cart</button>
             </div>
-            <p class="form-note" id="buyNote">Next: a short form about you and your training background, then payment. Your program will be matched to your needs and sent to your email within 2–10 days.</p>
+            <p class="form-note">Fill in the short form below about you and your training background, then press Buy Now. Your program will be matched to your needs and sent to your email within 2–10 days.</p>
+          </div>
+        </div>
+
+        <div class="container" style="max-width:760px;margin-top:48px;">
+          <div class="intake-card" id="intakeCard">
+            <h3 style="margin-bottom:4px;">Tell me about yourself</h3>
+            <p class="form-note" style="margin-top:0;margin-bottom:6px;">This information is used to match the program to your training needs. Fill it in below, you'll receive your program by email within 2–10 days.</p>
+            <p style="margin-top:0;margin-bottom:18px;color:var(--black);font-weight:600;">You can write your answers in English or Norwegian.</p>
+            <div class="form-field">
+              <label>Email to receive your program</label>
+              <input type="email" id="intakeEmail" placeholder="you@example.com" />
+            </div>
+            <div class="form-field">
+              <label>Years of experience (strength training, your sport, etc.)</label>
+              <input id="intakeExperience" placeholder="e.g. 3 years of strength training, 8 years playing football" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="form-field"><label>Position</label><input id="intakePosition" placeholder="e.g. Central midfielder" /></div>
+              <div class="form-field"><label>Age</label><input type="number" min="1" max="100" id="intakeAge" /></div>
+            </div>
+            <div class="form-field"><label>Your strengths</label><textarea id="intakeStrengths" style="min-height:70px;" placeholder="What are you already good at?"></textarea></div>
+            <div class="form-field"><label>Your weaknesses</label><textarea id="intakeWeaknesses" style="min-height:70px;" placeholder="What do you struggle with?"></textarea></div>
+            <div class="form-field"><label>What do you want to develop?</label><textarea id="intakeGoals" style="min-height:70px;" placeholder="e.g. First step speed, vertical jump, in-season durability..."></textarea></div>
+            <div class="form-field"><label>Anything else relevant</label><textarea id="intakeNotes" style="min-height:100px;" placeholder="Injuries, equipment access, schedule constraints, anything else I should know"></textarea></div>
+            <p class="form-note" id="intakeError" style="color:#B42318;"></p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+              <button class="btn btn-primary js-buy" style="flex:1;min-width:180px;">Buy Now</button>
+              <button class="btn btn-outline-dark js-cart" style="flex:1;min-width:180px;">Add to Cart</button>
+            </div>
+            <p class="form-note" id="cartNote"></p>
           </div>
         </div>
       `;
 
-      document.getElementById('buyBtn').addEventListener('click', () => {
-        // "Buy Now" = start a fresh cart with just this program, then go fill in the
-        // training-background form before checkout (same flow as the cart page).
-        saveCart([{ id: program.id, title: program.title, priceNok: program.priceNok, imagePath: program.imagePath }]);
-        window.location.href = '/cart';
-      });
+      /* ---- The "about the athlete" form now lives here, one per program ---- */
+      const FIELDS = {
+        deliveryEmail: 'intakeEmail', experience: 'intakeExperience', position: 'intakePosition', age: 'intakeAge',
+        strengths: 'intakeStrengths', weaknesses: 'intakeWeaknesses', goals: 'intakeGoals', notes: 'intakeNotes',
+      };
+      const REQUIRED = ['deliveryEmail', 'experience', 'position', 'age', 'strengths', 'weaknesses', 'goals'];
+      const LAST_KEY = 'cp_last_intake';
+      const errorEl = document.getElementById('intakeError');
+      const noteEl = document.getElementById('cartNote');
 
-      document.getElementById('cartBtn').addEventListener('click', () => {
-        const cart = addToCart(program);
-        const btn = document.getElementById('cartBtn');
-        const already = cart.some(item => item.id === program.id);
-        btn.textContent = already ? 'Added ✓' : 'Add to Cart';
-      });
+      // Prefill: this program's answers if it's already in the cart, otherwise the last form the
+      // visitor submitted (saves retyping when they buy several programs). "Anything else" is
+      // never carried over, since it's specific to one program.
+      let saved = getCart().find(item => item.id === program.id)?.intake;
+      if (!saved) { try { saved = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); if (saved) delete saved.notes; } catch { saved = null; } }
+      if (saved) for (const [key, elId] of Object.entries(FIELDS)) if (saved[key]) document.getElementById(elId).value = saved[key];
+
+      function readIntake() {
+        const intake = {};
+        for (const [key, elId] of Object.entries(FIELDS)) intake[key] = document.getElementById(elId).value.trim();
+        return intake;
+      }
+      // Returns the answers if the form is complete, otherwise shows what's wrong and scrolls to it.
+      function validIntake() {
+        const intake = readIntake();
+        noteEl.textContent = '';
+        if (REQUIRED.some(key => !intake[key]) || !intake.deliveryEmail.includes('@')) {
+          errorEl.textContent = 'Please fill in all fields above with a valid email (notes is optional) before continuing.';
+          document.getElementById('intakeCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return null;
+        }
+        errorEl.textContent = '';
+        try { localStorage.setItem(LAST_KEY, JSON.stringify(intake)); } catch { /* storage unavailable */ }
+        return intake;
+      }
+      const buyBtns = document.querySelectorAll('.js-buy');
+      const cartBtns = document.querySelectorAll('.js-cart');
+
+      // "Buy Now" pays for this program only (the cart is left alone); cancelling at the payment
+      // page brings the visitor back here with the form still filled in.
+      buyBtns.forEach(btn => btn.addEventListener('click', async () => {
+        const intake = validIntake();
+        if (!intake) return;
+        buyBtns.forEach(b => { b.disabled = true; b.textContent = 'Loading...'; });
+        try {
+          const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: [{ programId: program.id, intake }], cancelPath: '/program?id=' + encodeURIComponent(program.id) }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Something went wrong');
+          window.location.href = data.url;
+        } catch (e) {
+          buyBtns.forEach(b => { b.disabled = false; b.textContent = 'Buy Now'; });
+          errorEl.textContent = e.message + '.';
+        }
+      }));
+
+      cartBtns.forEach(btn => btn.addEventListener('click', () => {
+        const intake = validIntake();
+        if (!intake) return;
+        addToCart(program, intake);
+        cartBtns.forEach(b => { b.textContent = 'Added ✓'; });
+        noteEl.innerHTML = 'Added to your cart with your answers. <a href="/cart" style="color:var(--blue);text-decoration:underline;">View cart</a>';
+      }));
+
+      // Already in the cart (e.g. coming back to this page): show it on the button.
+      if (getCart().some(item => item.id === program.id)) cartBtns.forEach(b => { b.textContent = 'Added ✓'; });
     }
     load();
   </script>

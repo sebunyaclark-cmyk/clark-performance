@@ -33,6 +33,9 @@
         return;
       }
 
+      // Each program carries its own filled-in form (filled in on the program page).
+      const incomplete = cart.filter(item => !item.intake || !item.intake.deliveryEmail);
+
       box.innerHTML = `
         <div class="stack" style="margin-bottom:28px;">
           ${cart.map(item => `
@@ -41,6 +44,9 @@
               <div style="flex:1;min-width:0;">
                 <div style="font-weight:600;">${item.title}</div>
                 <div class="price">${formatPrice(item.priceNok)}</div>
+                ${item.intake && item.intake.deliveryEmail
+                  ? `<div class="form-note" style="margin:4px 0 0;">Answers filled in · sent to ${escapeText(item.intake.deliveryEmail)} · <a href="/program?id=${encodeURIComponent(item.id)}" style="color:var(--blue);text-decoration:underline;">edit</a></div>`
+                  : `<div class="form-note" style="margin:4px 0 0;color:#B42318;">Missing your details · <a href="/program?id=${encodeURIComponent(item.id)}" style="color:#B42318;text-decoration:underline;">fill in the form</a></div>`}
               </div>
               <button class="btn btn-outline-dark" style="padding:8px 16px;font-size:0.8rem;" data-remove="${item.id}">Remove</button>
             </div>
@@ -51,34 +57,13 @@
           <span class="price" style="font-size:1.6rem;">${formatPrice(cartTotal(cart))}</span>
         </div>
 
-        <div class="intake-card" style="margin-bottom:24px;">
-          <h3 style="margin-bottom:4px;">Tell me about yourself</h3>
-          <p class="form-note" style="margin-top:0;margin-bottom:6px;">This information is used to match the program to your training needs. Fill it in below, you'll receive your program by email within 2–10 days.</p>
-          <p style="margin-top:0;margin-bottom:18px;color:var(--black);font-weight:600;">You can write your answers in English or Norwegian.</p>
-          <div class="form-field">
-            <label>Email to receive your program</label>
-            <input type="email" id="intakeEmail" placeholder="you@example.com" />
-          </div>
-          <div class="form-field">
-            <label>Years of experience (strength training, your sport, etc.)</label>
-            <input id="intakeExperience" placeholder="e.g. 3 years of strength training, 8 years playing football" />
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-            <div class="form-field"><label>Position</label><input id="intakePosition" placeholder="e.g. Central midfielder" /></div>
-            <div class="form-field"><label>Age</label><input type="number" min="1" max="100" id="intakeAge" /></div>
-          </div>
-          <div class="form-field"><label>Your strengths</label><textarea id="intakeStrengths" style="min-height:70px;" placeholder="What are you already good at?"></textarea></div>
-          <div class="form-field"><label>Your weaknesses</label><textarea id="intakeWeaknesses" style="min-height:70px;" placeholder="What do you struggle with?"></textarea></div>
-          <div class="form-field"><label>What do you want to develop?</label><textarea id="intakeGoals" style="min-height:70px;" placeholder="e.g. First step speed, vertical jump, in-season durability..."></textarea></div>
-          <div class="form-field"><label>Anything else relevant</label><textarea id="intakeNotes" style="min-height:100px;" placeholder="Injuries, equipment access, schedule constraints, anything else I should know"></textarea></div>
-          <p class="form-note" id="intakeError" style="color:#B42318;"></p>
-        </div>
-
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button class="btn btn-primary" style="flex:1;min-width:200px;" id="checkoutBtn">Continue to Payment</button>
+          <button class="btn btn-primary" style="flex:1;min-width:200px;" id="checkoutBtn" ${incomplete.length ? 'disabled' : ''}>Continue to Payment</button>
           <a class="btn btn-outline-dark" href="/programs">Add More Programs</a>
         </div>
-        <p class="form-note" id="checkoutNote"></p>
+        <p class="form-note" id="checkoutNote">${incomplete.length
+          ? '<span style="color:#B42318;">Open each program marked "Missing your details" and fill in the short form about you, then come back here.</span>'
+          : 'Each program uses the answers you filled in on its own page. Your programs will be sent to your email within 2–10 days.'}</p>
       `;
 
       box.querySelectorAll('[data-remove]').forEach(btn => {
@@ -90,31 +75,13 @@
 
       document.getElementById('checkoutBtn').addEventListener('click', async () => {
         const btn = document.getElementById('checkoutBtn');
-        const errorEl = document.getElementById('intakeError');
-        const intake = {
-          deliveryEmail: document.getElementById('intakeEmail').value.trim(),
-          experience: document.getElementById('intakeExperience').value.trim(),
-          position: document.getElementById('intakePosition').value.trim(),
-          age: document.getElementById('intakeAge').value.trim(),
-          strengths: document.getElementById('intakeStrengths').value.trim(),
-          weaknesses: document.getElementById('intakeWeaknesses').value.trim(),
-          goals: document.getElementById('intakeGoals').value.trim(),
-          notes: document.getElementById('intakeNotes').value.trim(),
-        };
-        const required = ['deliveryEmail', 'experience', 'position', 'age', 'strengths', 'weaknesses', 'goals'];
-        if (required.some(key => !intake[key]) || !intake.deliveryEmail.includes('@')) {
-          errorEl.textContent = 'Please fill in all fields above with a valid email (notes is optional) before continuing to payment.';
-          document.getElementById('intakeExperience').closest('.intake-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-        errorEl.textContent = '';
         btn.disabled = true;
         btn.textContent = 'Loading...';
         try {
           const res = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ programIds: getCart().map(item => item.id), intake }),
+            body: JSON.stringify({ items: getCart().map(item => ({ programId: item.id, intake: item.intake })) }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Something went wrong');
@@ -122,9 +89,12 @@
         } catch (e) {
           btn.disabled = false;
           btn.textContent = 'Continue to Payment';
-          document.getElementById('checkoutNote').innerHTML = `<span style="color:#B42318;">${e.message}.</span>`;
+          document.getElementById('checkoutNote').innerHTML = `<span style="color:#B42318;">${escapeText(e.message)}.</span>`;
         }
       });
+    }
+    function escapeText(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
     renderCart();
   </script>
