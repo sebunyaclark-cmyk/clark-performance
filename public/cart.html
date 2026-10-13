@@ -34,7 +34,7 @@
       }
 
       // Each program carries its own filled-in form (filled in on the program page).
-      const incomplete = cart.filter(item => !item.intake || !item.intake.deliveryEmail);
+      const incomplete = cart.filter(item => !item.intake || !item.intake.deliveryEmail || !item.intake.name || !item.intake.club);
 
       box.innerHTML = `
         <div class="stack" style="margin-bottom:28px;">
@@ -44,8 +44,8 @@
               <div style="flex:1;min-width:0;">
                 <div style="font-weight:600;">${item.title}</div>
                 <div class="price">${formatPrice(item.priceNok)}</div>
-                ${item.intake && item.intake.deliveryEmail
-                  ? `<div class="form-note" style="margin:4px 0 0;">Answers filled in · sent to ${escapeText(item.intake.deliveryEmail)} · <a href="/program?id=${encodeURIComponent(item.id)}" style="color:var(--blue);text-decoration:underline;">edit</a></div>`
+                ${item.intake && item.intake.deliveryEmail && item.intake.name && item.intake.club
+                  ? `<div class="form-note" style="margin:4px 0 0;">Answers filled in for ${escapeText(item.intake.name)} · sent to ${escapeText(item.intake.deliveryEmail)} · <a href="/program?id=${encodeURIComponent(item.id)}" style="color:var(--blue);text-decoration:underline;">edit</a></div>`
                   : `<div class="form-note" style="margin:4px 0 0;color:#B42318;">Missing your details · <a href="/program?id=${encodeURIComponent(item.id)}" style="color:#B42318;text-decoration:underline;">fill in the form</a></div>`}
               </div>
               <button class="btn btn-outline-dark" style="padding:8px 16px;font-size:0.8rem;" data-remove="${item.id}">Remove</button>

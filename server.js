@@ -433,7 +433,7 @@ function verifyStripeSignature(rawBody, signatureHeader) {
 
 // The checkout form is customer-typed text that ends up in the admin panel and in emails, so only
 // the known fields are kept, as trimmed strings of limited length.
-const INTAKE_FIELDS = ['deliveryEmail', 'experience', 'position', 'age', 'strengths', 'weaknesses', 'goals', 'notes'];
+const INTAKE_FIELDS = ['name', 'deliveryEmail', 'club', 'experience', 'position', 'age', 'strengths', 'weaknesses', 'goals', 'notes'];
 function cleanIntake(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const out = {};
@@ -530,11 +530,14 @@ async function sendOrderNotification(order) {
     `<td style="padding:6px 0;text-align:right;">${it.priceNok != null ? formatNok(it.priceNok) : ''}</td></tr>`
   ).join('');
   const emails = deliveryEmails(order);
+  const names = [...new Set(intakeBlocks(order).map(b => b.info.name).filter(Boolean))];
   // One block per program: each program has its own filled-in form (possibly for another athlete).
   const blocks = intakeBlocks(order).map(({ title, info }) => `
       <h3 style="margin:24px 0 6px;">${escapeHtml(title)}</h3>
       <table style="width:100%;border-collapse:collapse;">
+        ${field('Name', info.name)}
         ${field('Send program to', info.deliveryEmail || emails[0])}
+        ${field('Club', info.club)}
         ${field('Experience', info.experience)}
         ${field('Position', info.position)}
         ${field('Age', info.age)}
@@ -566,7 +569,7 @@ async function sendOrderNotification(order) {
   const payload = {
     from: RESEND_FROM || 'Clark Performance <onboarding@resend.dev>',
     to: [ORDER_NOTIFY_EMAIL],
-    subject: `New order ${orderNumber(order)} – ${order.items.map(i => i.programTitle).join(', ')} (${formatNok(order.amountNok)})`,
+    subject: `New order ${orderNumber(order)}${names.length ? ' – ' + names.join(', ') : ''} – ${order.items.map(i => i.programTitle).join(', ')} (${formatNok(order.amountNok)})`,
     html,
   };
   if (emails[0]) payload.reply_to = emails[0];
@@ -917,6 +920,8 @@ const server = http.createServer(async (req, res) => {
             programTitle: 'TEST – Football – In-Season',
             priceNok: 990,
             athleteInfo: {
+              name: 'Test Athlete',
+              club: 'Sample FK',
               deliveryEmail: 'athlete@example.com',
               experience: 'Sample answer: 3 years of strength training',
               position: 'Central midfielder',

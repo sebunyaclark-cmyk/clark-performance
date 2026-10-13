@@ -395,6 +395,9 @@ function orderIntakeBlocks(o) {
   if (o.athleteInfo) return [{ title: (o.items || []).map(it => it.programTitle).join(', '), info: o.athleteInfo }];
   return [];
 }
+function orderNames(o) {
+  return [...new Set(orderIntakeBlocks(o).map(b => b.info.name).filter(Boolean))].join(', ');
+}
 function orderEmails(o) {
   const emails = [...new Set(orderIntakeBlocks(o).map(b => b.info.deliveryEmail).filter(Boolean))];
   return emails.length ? emails : [o.customerEmail].filter(Boolean);
@@ -402,7 +405,9 @@ function orderEmails(o) {
 function athleteInfoHTML(a) {
   if (!a) return '<p class="form-note">No training-background form for this order (bought before the form existed, or filled in blank).</p>';
   const rows = [
+    ['Name', a.name],
     ['Send program to', a.deliveryEmail],
+    ['Club', a.club],
     ['Experience', a.experience],
     ['Position', a.position],
     ['Age', a.age],
@@ -436,7 +441,7 @@ async function renderOrders() {
       <div class="admin-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
           <div>
-            <div style="font-weight:600;">${(o.items || []).map(it => it.programTitle).join(', ') || 'Unknown program'}</div>
+            <div style="font-weight:600;">${escapeHtml(orderNames(o)) ? escapeHtml(orderNames(o)) + ' — ' : ''}${escapeHtml((o.items || []).map(it => it.programTitle).join(', ') || 'Unknown program')}</div>
             <p class="form-note" style="margin:4px 0 0;">${new Date(o.createdAt).toLocaleString('en-US')} · Send to: <strong>${escapeHtml(orderEmails(o).join(', ') || 'no email')}</strong> · ${o.amountNok || ''} NOK</p>
           </div>
           <button class="btn btn-outline-dark" style="padding:8px 14px;font-size:0.8rem;" data-toggle="${o.id}">Training background</button>

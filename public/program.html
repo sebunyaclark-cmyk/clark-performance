@@ -63,8 +63,16 @@
             <p class="form-note" style="margin-top:0;margin-bottom:6px;">This information is used to match the program to your training needs. Fill it in below, you'll receive your program by email within 2–10 days.</p>
             <p style="margin-top:0;margin-bottom:18px;color:var(--black);font-weight:600;">You can write your answers in English or Norwegian.</p>
             <div class="form-field">
+              <label>Your name</label>
+              <input id="intakeName" placeholder="First and last name" autocomplete="name" />
+            </div>
+            <div class="form-field">
               <label>Email to receive your program</label>
               <input type="email" id="intakeEmail" placeholder="you@example.com" />
+            </div>
+            <div class="form-field">
+              <label>Which club do you play for?</label>
+              <input id="intakeClub" placeholder="e.g. Løvenstad FK, or write &quot;No club&quot;" />
             </div>
             <div class="form-field">
               <label>Years of experience (strength training, your sport, etc.)</label>
@@ -90,10 +98,10 @@
 
       /* ---- The "about the athlete" form now lives here, one per program ---- */
       const FIELDS = {
-        deliveryEmail: 'intakeEmail', experience: 'intakeExperience', position: 'intakePosition', age: 'intakeAge',
+        name: 'intakeName', deliveryEmail: 'intakeEmail', club: 'intakeClub', experience: 'intakeExperience', position: 'intakePosition', age: 'intakeAge',
         strengths: 'intakeStrengths', weaknesses: 'intakeWeaknesses', goals: 'intakeGoals', notes: 'intakeNotes',
       };
-      const REQUIRED = ['deliveryEmail', 'experience', 'position', 'age', 'strengths', 'weaknesses', 'goals'];
+      const REQUIRED = ['name', 'deliveryEmail', 'club', 'experience', 'position', 'age', 'strengths', 'weaknesses', 'goals'];
       const LAST_KEY = 'cp_last_intake';
       const errorEl = document.getElementById('intakeError');
       const noteEl = document.getElementById('cartNote');
